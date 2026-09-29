@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "ksuforge",
+  "outputfilename": "ksuforge",
+  "frontend:dir": "frontend",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dev:watcher": "",
+  "author": {"name": "ksuforge"},
+  "preBuildHooks": {
+    "windows/*": "go -C ../../../../cmd/fetchtools run . -goos windows",
+    "darwin/*": "go -C ../../../../cmd/fetchtools run . -goos darwin",
+    "linux/*": "go -C ../../../../cmd/fetchtools run . -goos linux"
+  },
+  "info": {
+    "productName": "ksuforge",
+    "productVersion": "1.0.0",
+    "comments": "KernelSU ROM preparation and installation utility"
+  }
+}

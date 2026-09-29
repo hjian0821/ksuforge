@@ -1,0 +1,14 @@
+/bin/
+/cmd/ksuforge-gui/build/bin/
+/dist/
+/third_party/bin/
+/third_party/licenses/
+/internal/ksud/assets/*
+!/internal/ksud/assets/README.md
+/internal/payloaddumper/assets/*
+!/internal/payloaddumper/assets/README.md
+/ksuforge-output/
+.idea/
+*.img
+*.zip
+.DS_Store

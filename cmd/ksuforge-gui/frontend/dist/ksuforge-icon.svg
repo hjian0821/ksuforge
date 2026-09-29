@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="ksuforge">
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="#10151b"/>
+  <path d="M300 256v512" fill="none" stroke="#39d98a" stroke-width="168" stroke-linecap="round"/>
+  <path d="M326 512 710 256" fill="none" stroke="#39d98a" stroke-width="168" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M326 512 710 768" fill="none" stroke="#57c7ff" stroke-width="168" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
