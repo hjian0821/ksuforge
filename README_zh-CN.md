@@ -53,7 +53,7 @@ KSUForge 是一款使用 Go 和 Wails 构建的 KernelSU 镜像准备与安装�
 
 ## 安装
 
-推荐从 GitHub Releases 下载对应系统和架构的最新压缩包，解压后可获得：
+推荐从 [GitHub Releases](https://github.com/hjian0821/ksuforge/releases) 下载对应系统和架构的最新压缩包，解压后可获得：
 
 - `ksuforge`：桌面应用
 - `ksuforge-cli`：命令行工具
@@ -241,7 +241,9 @@ ksuforge_<版本>_<系统>_<架构>.zip
 make release-all VERSION=v1.2.3
 ```
 
-推送符合语义化版本规范的 `v*` tag 后，GitHub Actions 会自动构建 macOS、Linux 和 Windows 版本，生成 SHA-256 校验文件并发布到 GitHub Releases：
+每次推送或合并 Pull Request 到 `main` 后，GitHub Actions 都会更新滚动的 `nightly` 预发布版本，其中包含 macOS、Linux 和 Windows 构建包以及 SHA-256 校验文件。`nightly` 中的产物始终对应 `main` 的最新提交。
+
+推送符合语义化版本规范的 `v*` tag 后，则会创建独立的正式 GitHub Release，并自动生成发布说明：
 
 ```bash
 git tag -a v1.2.3 -m "Release v1.2.3"
@@ -267,4 +269,3 @@ git push origin v1.2.3
 KSUForge 使用 [Apache License 2.0](LICENSE) 发布。
 
 KernelSU 和 payload-dumper-go 分别遵循各自的开源许可证，本项目构建过程中获取的第三方二进制文件不改变其原有许可条款。
-

@@ -2,8 +2,15 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -13,26 +20,39 @@ env:
   WAILS_VERSION: "v2.15.0"
 
 jobs:
-  validate:
-    name: Validate release tag
+  metadata:
+    name: Prepare release metadata
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.value }}
+      tag: ${{ steps.version.outputs.tag }}
+      title: ${{ steps.version.outputs.title }}
+      nightly: ${{ steps.version.outputs.nightly }}
 
     steps:
-      - name: Require a semantic version tag
+      - name: Resolve release version
         id: version
         shell: bash
         run: |
-          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
-            echo "Release tag must be semantic, for example v1.2.3" >&2
-            exit 1
+          if [[ "$GITHUB_REF_TYPE" == "branch" && "$GITHUB_REF_NAME" == "main" ]]; then
+            echo "value=nightly" >> "$GITHUB_OUTPUT"
+            echo "tag=nightly" >> "$GITHUB_OUTPUT"
+            echo "title=Nightly build" >> "$GITHUB_OUTPUT"
+            echo "nightly=true" >> "$GITHUB_OUTPUT"
+          else
+            if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+              echo "Release tag must be semantic, for example v1.2.3" >&2
+              exit 1
+            fi
+            echo "value=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo "title=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo "nightly=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "value=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
-    needs: validate
+    needs: metadata
     strategy:
       fail-fast: false
       matrix:
@@ -60,7 +80,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-      - name: Check out tagged source
+      - name: Check out source
         uses: actions/checkout@v4
 
       - name: Set up Go
@@ -88,7 +108,7 @@ jobs:
         shell: bash
         run: >-
           make release
-          VERSION="${{ needs.validate.outputs.version }}"
+          VERSION="${{ needs.metadata.outputs.version }}"
           GOOS="${{ matrix.goos }}"
           GOARCH="${{ matrix.goarch }}"
           WAILS_FLAGS="${{ matrix.wails_flags }}"
@@ -106,7 +126,7 @@ jobs:
   publish:
     name: Publish GitHub Release
     needs:
-      - validate
+      - metadata
       - build
     runs-on: ubuntu-24.04
     permissions:
@@ -128,14 +148,30 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.validate.outputs.version }}
+          VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag }}
+          RELEASE_TITLE: ${{ needs.metadata.outputs.title }}
+          IS_NIGHTLY: ${{ needs.metadata.outputs.nightly }}
         run: |
-          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$VERSION" bin/* --clobber --repo "$GITHUB_REPOSITORY"
+          if [[ "$IS_NIGHTLY" == "true" ]]; then
+            if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release delete "$RELEASE_TAG" --cleanup-tag --yes --repo "$GITHUB_REPOSITORY"
+            elif gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+              gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$RELEASE_TAG"
+            fi
+            gh release create "$RELEASE_TAG" bin/* \
+              --target "$GITHUB_SHA" \
+              --title "$RELEASE_TITLE" \
+              --notes "Automated build from main commit $GITHUB_SHA." \
+              --prerelease \
+              --latest=false \
+              --repo "$GITHUB_REPOSITORY"
+          elif gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" bin/* --clobber --repo "$GITHUB_REPOSITORY"
           else
-            flags=(--verify-tag --generate-notes --title "$VERSION" --repo "$GITHUB_REPOSITORY")
+            flags=(--verify-tag --generate-notes --title "$RELEASE_TITLE" --repo "$GITHUB_REPOSITORY")
             if [[ "$VERSION" == *-* ]]; then
               flags+=(--prerelease)
             fi
-            gh release create "$VERSION" bin/* "${flags[@]}"
+            gh release create "$RELEASE_TAG" bin/* "${flags[@]}"
           fi
