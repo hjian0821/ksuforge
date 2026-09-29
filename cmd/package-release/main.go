@@ -1,5 +1,6 @@
-// Command package-release creates a distributable archive from native build
-// outputs. The archive name follows <project>_<version>_<goos>_<goarch>.
+// Command package-release creates separate GUI and CLI archives from native
+// build outputs. Archive names follow
+// <project>-<kind>_<version>_<goos>_<goarch>.
 package main
 
 import (
@@ -29,39 +30,57 @@ func main() {
 	goarch := flag.String("goarch", runtime.GOARCH, "target architecture")
 	flag.Parse()
 
-	archive, err := packageRelease(*binDir, *version, *goos, *goarch)
+	archives, err := packageReleases(*binDir, *version, *goos, *goarch)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "package release:", err)
 		os.Exit(1)
 	}
-	fmt.Println(archive)
+	for _, archive := range archives {
+		fmt.Println(archive)
+	}
 }
 
-func packageRelease(binDir, version, goos, goarch string) (string, error) {
+type packageSpec struct {
+	name   string
+	inputs []string
+}
+
+func packageReleases(binDir, version, goos, goarch string) ([]string, error) {
 	version = strings.TrimPrefix(strings.TrimSpace(version), "v")
 	if !safeVersion.MatchString(version) {
-		return "", fmt.Errorf("invalid version %q", version)
+		return nil, fmt.Errorf("invalid version %q", version)
 	}
 	if goos != "darwin" && goos != "linux" && goos != "windows" {
-		return "", fmt.Errorf("unsupported operating system %q", goos)
+		return nil, fmt.Errorf("unsupported operating system %q", goos)
 	}
 	if !safeVersion.MatchString(goarch) {
-		return "", fmt.Errorf("invalid architecture %q", goarch)
+		return nil, fmt.Errorf("invalid architecture %q", goarch)
 	}
 
-	rootName := strings.Join([]string{projectName, version, goos, goarch}, "_")
 	ext := ".tar.gz"
 	if goos == "windows" {
 		ext = ".zip"
 	}
-	destination := filepath.Join(binDir, rootName+ext)
 
-	inputs := releaseInputs(goos)
-	for _, input := range inputs {
-		if _, err := os.Stat(filepath.Join(binDir, input)); err != nil {
-			return "", fmt.Errorf("required build output %s: %w", input, err)
+	var archives []string
+	for _, spec := range releasePackages(goos) {
+		for _, input := range spec.inputs {
+			if _, err := os.Stat(filepath.Join(binDir, input)); err != nil {
+				return nil, fmt.Errorf("required %s build output %s: %w", spec.name, input, err)
+			}
 		}
+		rootName := strings.Join([]string{spec.name, version, goos, goarch}, "_")
+		archive, err := writeArchive(binDir, rootName, ext, goos, spec.inputs)
+		if err != nil {
+			return nil, err
+		}
+		archives = append(archives, archive)
 	}
+	return archives, nil
+}
+
+func writeArchive(binDir, rootName, ext, goos string, inputs []string) (string, error) {
+	destination := filepath.Join(binDir, rootName+ext)
 
 	temp, err := os.CreateTemp(binDir, ".package-release-*")
 	if err != nil {
@@ -90,7 +109,7 @@ func packageRelease(binDir, version, goos, goarch string) (string, error) {
 	return destination, nil
 }
 
-func releaseInputs(goos string) []string {
+func releasePackages(goos string) []packageSpec {
 	exe := ""
 	gui := projectName
 	if goos == "windows" {
@@ -99,12 +118,10 @@ func releaseInputs(goos string) []string {
 	} else if goos == "darwin" {
 		gui += ".app"
 	}
-	return []string{
-		gui,
-		projectName + "-cli" + exe,
-		"ksud" + exe,
-		"payload-dumper" + exe,
-		"KernelSU-GPL-3.0.txt",
+	license := "KernelSU-GPL-3.0.txt"
+	return []packageSpec{
+		{name: projectName + "-gui", inputs: []string{gui, license}},
+		{name: projectName + "-cli", inputs: []string{projectName + "-cli" + exe, license}},
 	}
 }
 
