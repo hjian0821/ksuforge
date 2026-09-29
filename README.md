@@ -53,7 +53,7 @@ Release packages include `ksud` and `payload-dumper` for supported platforms, so
 
 ## Installation
 
-Download the latest package for your operating system and architecture from GitHub Releases. Each archive contains:
+Download the latest package for your operating system and architecture from [GitHub Releases](https://github.com/hjian0821/ksuforge/releases). Each archive contains:
 
 - `ksuforge`: desktop application
 - `ksuforge-cli`: command-line application
@@ -241,7 +241,9 @@ On macOS, with Docker Desktop installed and running, build packages for the curr
 make release-all VERSION=v1.2.3
 ```
 
-Pushing a semantic `v*` tag triggers GitHub Actions to build the macOS, Linux, and Windows packages, generate SHA-256 checksums, and publish a GitHub Release:
+Every push or merged pull request to `main` updates the rolling `nightly` pre-release with macOS, Linux, and Windows packages plus SHA-256 checksums. The `nightly` assets always represent the latest commit on `main`.
+
+Pushing a semantic `v*` tag creates a separate stable GitHub Release with generated release notes:
 
 ```bash
 git tag -a v1.2.3 -m "Release v1.2.3"
