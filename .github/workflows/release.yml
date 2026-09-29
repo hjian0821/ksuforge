@@ -118,8 +118,10 @@ jobs:
         with:
           name: ksuforge-${{ matrix.goos }}-${{ matrix.goarch }}
           path: |
-            bin/ksuforge_*.tar.gz
-            bin/ksuforge_*.zip
+            bin/ksuforge-gui_*.tar.gz
+            bin/ksuforge-gui_*.zip
+            bin/ksuforge-cli_*.tar.gz
+            bin/ksuforge-cli_*.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -134,7 +136,7 @@ jobs:
 
     steps:
       - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: ksuforge-*
           path: bin
@@ -142,7 +144,29 @@ jobs:
 
       - name: Generate SHA-256 checksums
         shell: bash
-        run: cd bin && sha256sum ksuforge_* > checksums.txt
+        run: cd bin && sha256sum ksuforge-gui_* ksuforge-cli_* > checksums.txt
+
+      - name: Generate download guide
+        shell: bash
+        env:
+          VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          package_version="${VERSION#v}"
+          cat > release-notes.md <<EOF
+          ## Which file should I download?
+
+          Choose **GUI** for the desktop application. Choose **CLI** only if you want to use KSUForge from a terminal or script.
+
+          | System | Architecture | Desktop GUI | Command line |
+          | --- | --- | --- | --- |
+          | macOS (Apple Silicon) | ARM64 | \`ksuforge-gui_${package_version}_darwin_arm64.tar.gz\` | \`ksuforge-cli_${package_version}_darwin_arm64.tar.gz\` |
+          | macOS (Intel) | AMD64 | \`ksuforge-gui_${package_version}_darwin_amd64.tar.gz\` | \`ksuforge-cli_${package_version}_darwin_amd64.tar.gz\` |
+          | Linux ARM64 | ARM64 | \`ksuforge-gui_${package_version}_linux_arm64.tar.gz\` | \`ksuforge-cli_${package_version}_linux_arm64.tar.gz\` |
+          | Linux x64 | AMD64 | \`ksuforge-gui_${package_version}_linux_amd64.tar.gz\` | \`ksuforge-cli_${package_version}_linux_amd64.tar.gz\` |
+          | Windows x64 | AMD64 | \`ksuforge-gui_${package_version}_windows_amd64.zip\` | \`ksuforge-cli_${package_version}_windows_amd64.zip\` |
+
+          Both applications contain the required \`ksud\` and \`payload-dumper\` tools. You do not need to download them separately. Use \`checksums.txt\` to verify SHA-256 checksums.
+          EOF
 
       - name: Create or update GitHub Release
         shell: bash
@@ -162,14 +186,15 @@ jobs:
             gh release create "$RELEASE_TAG" bin/* \
               --target "$GITHUB_SHA" \
               --title "$RELEASE_TITLE" \
-              --notes "Automated build from main commit $GITHUB_SHA." \
+              --notes-file release-notes.md \
               --prerelease \
               --latest=false \
               --repo "$GITHUB_REPOSITORY"
           elif gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" bin/* --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "$RELEASE_TAG" --notes-file release-notes.md --repo "$GITHUB_REPOSITORY"
           else
-            flags=(--verify-tag --generate-notes --title "$RELEASE_TITLE" --repo "$GITHUB_REPOSITORY")
+            flags=(--verify-tag --generate-notes --notes-file release-notes.md --title "$RELEASE_TITLE" --repo "$GITHUB_REPOSITORY")
             if [[ "$VERSION" == *-* ]]; then
               flags+=(--prerelease)
             fi

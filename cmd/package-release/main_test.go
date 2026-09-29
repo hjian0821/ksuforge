@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestPackageReleaseNamesAndContents(t *testing.T) {
+func TestPackageReleasesNamesAndContents(t *testing.T) {
 	tests := []struct {
 		goos      string
 		ext       string
@@ -26,39 +26,75 @@ func TestPackageReleaseNamesAndContents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.goos, func(t *testing.T) {
 			binDir := t.TempDir()
-			for _, input := range releaseInputs(tt.goos) {
-				path := filepath.Join(binDir, input)
-				if strings.HasSuffix(input, ".app") {
-					path = filepath.Join(path, "Contents", "MacOS", "ksuforge")
+			for _, spec := range releasePackages(tt.goos) {
+				for _, input := range spec.inputs {
+					path := filepath.Join(binDir, input)
+					if strings.HasSuffix(input, ".app") {
+						path = filepath.Join(path, "Contents", "MacOS", "ksuforge")
+					}
+					if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(path, []byte(input), 0o755); err != nil {
+						t.Fatal(err)
+					}
 				}
-				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-					t.Fatal(err)
+			}
+			for _, helper := range []string{"ksud", "payload-dumper"} {
+				if tt.goos == "windows" {
+					helper += ".exe"
 				}
-				if err := os.WriteFile(path, []byte(input), 0o755); err != nil {
+				if err := os.WriteFile(filepath.Join(binDir, helper), []byte(helper), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			}
 
-			archive, err := packageRelease(binDir, "v1.2.3", tt.goos, "amd64")
+			archives, err := packageReleases(binDir, "v1.2.3", tt.goos, "amd64")
 			if err != nil {
 				t.Fatal(err)
 			}
-			wantName := "ksuforge_1.2.3_" + tt.goos + "_amd64" + tt.ext
-			if filepath.Base(archive) != wantName {
-				t.Fatalf("archive name = %q, want %q", filepath.Base(archive), wantName)
+			if len(archives) != 2 {
+				t.Fatalf("archive count = %d, want 2", len(archives))
 			}
-			files := tt.listFiles(t, archive)
-			wantGUI := filepath.ToSlash(filepath.Join("ksuforge_1.2.3_"+tt.goos+"_amd64", tt.gui))
-			if !contains(files, wantGUI) && !contains(files, wantGUI+"/") {
-				t.Fatalf("archive does not contain %q: %v", wantGUI, files)
+
+			guiRoot := "ksuforge-gui_1.2.3_" + tt.goos + "_amd64"
+			cliRoot := "ksuforge-cli_1.2.3_" + tt.goos + "_amd64"
+			cliName := "ksuforge-cli"
+			if tt.goos == "windows" {
+				cliName += ".exe"
 			}
+			assertArchive(t, tt.listFiles, archives[0], guiRoot+tt.ext,
+				[]string{filepath.ToSlash(filepath.Join(guiRoot, tt.gui)), filepath.ToSlash(filepath.Join(guiRoot, "KernelSU-GPL-3.0.txt"))},
+				[]string{cliName, "ksud", "payload-dumper"})
+			assertArchive(t, tt.listFiles, archives[1], cliRoot+tt.ext,
+				[]string{filepath.ToSlash(filepath.Join(cliRoot, cliName)), filepath.ToSlash(filepath.Join(cliRoot, "KernelSU-GPL-3.0.txt"))},
+				[]string{tt.gui, "ksud", "payload-dumper"})
 		})
 	}
 }
 
-func TestPackageReleaseRejectsInvalidVersion(t *testing.T) {
-	if _, err := packageRelease(t.TempDir(), "../release", "linux", "amd64"); err == nil {
+func TestPackageReleasesRejectsInvalidVersion(t *testing.T) {
+	if _, err := packageReleases(t.TempDir(), "../release", "linux", "amd64"); err == nil {
 		t.Fatal("expected invalid version to fail")
+	}
+}
+
+func assertArchive(t *testing.T, listFiles func(*testing.T, string) []string, archive, wantName string, required, forbidden []string) {
+	t.Helper()
+	if filepath.Base(archive) != wantName {
+		t.Fatalf("archive name = %q, want %q", filepath.Base(archive), wantName)
+	}
+	files := listFiles(t, archive)
+	for _, want := range required {
+		if !contains(files, want) && !contains(files, want+"/") {
+			t.Errorf("archive %q does not contain %q: %v", wantName, want, files)
+		}
+	}
+	for _, unwanted := range forbidden {
+		root := strings.Split(required[0], "/")[0]
+		if contains(files, filepath.ToSlash(filepath.Join(root, unwanted))) || contains(files, filepath.ToSlash(filepath.Join(root, unwanted+".exe"))) {
+			t.Errorf("archive %q unexpectedly contains top-level %q: %v", wantName, unwanted, files)
+		}
 	}
 }
 

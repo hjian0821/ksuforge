@@ -71,5 +71,6 @@ docker_make env CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc make release \
 
 echo "==> Release archives"
 find "$project_root/bin" -maxdepth 1 -type f \
-  \( -name "ksuforge_*.tar.gz" -o -name "ksuforge_*.zip" \) \
+  \( -name "ksuforge-gui_*.tar.gz" -o -name "ksuforge-gui_*.zip" \
+     -o -name "ksuforge-cli_*.tar.gz" -o -name "ksuforge-cli_*.zip" \) \
   -print | sort

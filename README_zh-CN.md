@@ -49,24 +49,27 @@ KSUForge 是一款使用 Go 和 Wails 构建的 KernelSU 镜像准备与安装�
 - [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)，并确保 `adb` 和 `fastboot` 位于 `PATH`
 - 设备已开启 USB 调试并授权当前电脑
 
-发布包已经包含受支持平台的 `ksud` 和 `payload-dumper`，通常不需要单独安装。使用其他版本时，可以通过 CLI 的 `--ksud` 参数或 GUI 高级设置指定外部 `ksud`。
+GUI 和 CLI 发布包都已经内置受支持平台的 `ksud` 和 `payload-dumper`，通常不需要单独安装。使用其他版本时，可以通过 CLI 的 `--ksud` 参数或 GUI 高级设置指定外部 `ksud`。
 
 ## 安装
 
-推荐从 [GitHub Releases](https://github.com/hjian0821/ksuforge/releases) 下载对应系统和架构的最新压缩包，解压后可获得：
+请从 [GitHub Releases](https://github.com/hjian0821/ksuforge/releases) 下载与系统和架构对应的压缩包：
 
-- `ksuforge`：桌面应用
-- `ksuforge-cli`：命令行工具
-- `ksud`、`payload-dumper`：随包工具
-- `KernelSU-GPL-3.0.txt`：KernelSU 许可证
+- 普通用户下载 `ksuforge-gui_*` 桌面版。
+- 只在需要终端或脚本调用时下载 `ksuforge-cli_*` 命令行版。
+- 除非需要同时使用两种界面，否则不必下载两份。
+- Apple Silicon Mac 选择 `darwin_arm64`，Intel Mac 选择 `darwin_amd64`。
+- 大多数 Windows 和 Linux 电脑选择 `amd64`。
 
-项目提供以下发布目标：
+GUI 与 CLI 分开打包：
 
-| 系统 | 架构 | GUI | CLI |
+| 系统 | 架构 | GUI 压缩包 | CLI 压缩包 |
 | --- | --- | --- | --- |
-| macOS | ARM64、AMD64 | `ksuforge.app` | `ksuforge-cli` |
-| Linux | ARM64、AMD64 | `ksuforge` | `ksuforge-cli` |
-| Windows | AMD64 | `ksuforge.exe` | `ksuforge-cli.exe` |
+| macOS | ARM64 | `ksuforge-gui_<版本>_darwin_arm64.tar.gz` | `ksuforge-cli_<版本>_darwin_arm64.tar.gz` |
+| macOS | AMD64 | `ksuforge-gui_<版本>_darwin_amd64.tar.gz` | `ksuforge-cli_<版本>_darwin_amd64.tar.gz` |
+| Linux | ARM64 | `ksuforge-gui_<版本>_linux_arm64.tar.gz` | `ksuforge-cli_<版本>_linux_arm64.tar.gz` |
+| Linux | AMD64 | `ksuforge-gui_<版本>_linux_amd64.tar.gz` | `ksuforge-cli_<版本>_linux_amd64.tar.gz` |
+| Windows | AMD64 | `ksuforge-gui_<版本>_windows_amd64.zip` | `ksuforge-cli_<版本>_windows_amd64.zip` |
 
 ## 使用方法
 
@@ -222,7 +225,7 @@ make test
 
 ## 发布构建
 
-在当前系统上生成发布压缩包：
+在当前系统上分别生成 GUI 和 CLI 发布压缩包：
 
 ```bash
 make release VERSION=v1.2.3
@@ -231,8 +234,10 @@ make release VERSION=v1.2.3
 产物位于 `bin/`，文件名格式为：
 
 ```text
-ksuforge_<版本>_<系统>_<架构>.tar.gz
-ksuforge_<版本>_<系统>_<架构>.zip
+ksuforge-gui_<版本>_<系统>_<架构>.tar.gz
+ksuforge-cli_<版本>_<系统>_<架构>.tar.gz
+
+# Windows 使用 .zip，不使用 .tar.gz
 ```
 
 在 macOS 上安装并启动 Docker Desktop 后，可以构建当前 macOS 架构、Linux AMD64 和 Windows AMD64 的发布包：

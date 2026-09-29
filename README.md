@@ -49,24 +49,27 @@ Before running KSUForge, make sure you have:
 - [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools), with `adb` and `fastboot` available in `PATH`
 - USB debugging enabled and the computer authorized on the device
 
-Release packages include `ksud` and `payload-dumper` for supported platforms, so they normally do not need to be installed separately. To use another `ksud` version, specify it with the CLI `--ksud` option or in the GUI advanced settings.
+Both the GUI and CLI packages contain `ksud` and `payload-dumper` for supported platforms, so they normally do not need to be installed separately. To use another `ksud` version, specify it with the CLI `--ksud` option or in the GUI advanced settings.
 
 ## Installation
 
-Download the latest package for your operating system and architecture from [GitHub Releases](https://github.com/hjian0821/ksuforge/releases). Each archive contains:
+Download the latest package for your operating system and architecture from [GitHub Releases](https://github.com/hjian0821/ksuforge/releases):
 
-- `ksuforge`: desktop application
-- `ksuforge-cli`: command-line application
-- `ksud` and `payload-dumper`: bundled helper tools
-- `KernelSU-GPL-3.0.txt`: KernelSU license
+- Download a `ksuforge-gui_*` archive for the desktop application.
+- Download a `ksuforge-cli_*` archive only if you want the command-line tool.
+- Do not download both unless you intend to use both interfaces.
+- Apple Silicon Macs use `darwin_arm64`; Intel Macs use `darwin_amd64`.
+- Most Windows and Linux PCs use `amd64`.
 
-The following release targets are available:
+GUI and CLI are packaged separately:
 
-| Operating system | Architecture | GUI | CLI |
+| Operating system | Architecture | GUI archive | CLI archive |
 | --- | --- | --- | --- |
-| macOS | ARM64, AMD64 | `ksuforge.app` | `ksuforge-cli` |
-| Linux | ARM64, AMD64 | `ksuforge` | `ksuforge-cli` |
-| Windows | AMD64 | `ksuforge.exe` | `ksuforge-cli.exe` |
+| macOS | ARM64 | `ksuforge-gui_<version>_darwin_arm64.tar.gz` | `ksuforge-cli_<version>_darwin_arm64.tar.gz` |
+| macOS | AMD64 | `ksuforge-gui_<version>_darwin_amd64.tar.gz` | `ksuforge-cli_<version>_darwin_amd64.tar.gz` |
+| Linux | ARM64 | `ksuforge-gui_<version>_linux_arm64.tar.gz` | `ksuforge-cli_<version>_linux_arm64.tar.gz` |
+| Linux | AMD64 | `ksuforge-gui_<version>_linux_amd64.tar.gz` | `ksuforge-cli_<version>_linux_amd64.tar.gz` |
+| Windows | AMD64 | `ksuforge-gui_<version>_windows_amd64.zip` | `ksuforge-cli_<version>_windows_amd64.zip` |
 
 ## Usage
 
@@ -222,7 +225,7 @@ This command runs all Go tests followed by `go vet`.
 
 ## Release Builds
 
-Create a release archive for the current target:
+Create separate GUI and CLI release archives for the current target:
 
 ```bash
 make release VERSION=v1.2.3
@@ -231,8 +234,10 @@ make release VERSION=v1.2.3
 Archives are written to `bin/` using the following naming scheme:
 
 ```text
-ksuforge_<version>_<os>_<architecture>.tar.gz
-ksuforge_<version>_<os>_<architecture>.zip
+ksuforge-gui_<version>_<os>_<architecture>.tar.gz
+ksuforge-cli_<version>_<os>_<architecture>.tar.gz
+
+# Windows uses .zip instead of .tar.gz
 ```
 
 On macOS, with Docker Desktop installed and running, build packages for the current macOS architecture, Linux AMD64, and Windows AMD64 with:
