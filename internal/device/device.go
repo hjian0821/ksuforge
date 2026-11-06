@@ -206,6 +206,11 @@ func (c Client) CurrentSlot(ctx context.Context, serial string) string {
 	return strings.TrimPrefix(slot, "_")
 }
 
+func (c Client) Product(ctx context.Context, serial string) string {
+	v, _ := parseGetVar(c.GetVar(ctx, serial, "product"), "product")
+	return v
+}
+
 func parseGetVar(output, key string) (string, bool) {
 	key = strings.ToLower(strings.TrimSpace(key))
 	for _, line := range strings.Split(output, "\n") {

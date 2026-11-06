@@ -49,30 +49,39 @@ func (s Service) Run(ctx context.Context, o Options) error {
 	if err != nil {
 		return err
 	}
-	if d.Mode != device.ADB {
-		return i18n.NewError("error.fastboot_preexisting")
-	}
-	d, err = s.Devices.Inspect(ctx, d.Serial)
-	if err != nil {
-		return err
-	}
-	p, supported := profile.Match(d.Manufacturer, d.Brand)
-	if !supported && !o.AllowOtherOEM {
-		return i18n.NewError("error.oem_unsupported")
-	}
-	profileName := "generic"
-	if supported {
-		profileName = p.Name()
-		if err := p.ValidateCodename(d.Codename); err != nil {
+
+	var partition string
+	alreadyFastboot := d.Mode == device.Fastboot
+	if alreadyFastboot {
+		d.Codename = s.Devices.Product(ctx, d.Serial)
+		partition, err = fastbootPartition(o.Partition, o.Mode)
+		if err != nil {
+			return err
+		}
+		logger.Info("flash.device_information", "codename", d.Codename, "mode", "fastboot")
+	} else {
+		d, err = s.Devices.Inspect(ctx, d.Serial)
+		if err != nil {
+			return err
+		}
+		p, supported := profile.Match(d.Manufacturer, d.Brand)
+		if !supported && !o.AllowOtherOEM {
+			return i18n.NewError("error.oem_unsupported")
+		}
+		profileName := "generic"
+		if supported {
+			profileName = p.Name()
+			if err := p.ValidateCodename(d.Codename); err != nil {
+				return err
+			}
+		}
+		logger.Info("flash.device_information", "model", d.Model, "codename", d.Codename, "profile", profileName, "android", d.Android, "sdk", d.SDK)
+		partition, err = ChooseDevicePartition(o.Partition, o.Mode, d.KMI, d.HasInitBoot, d.SDK)
+		if err != nil {
 			return err
 		}
 	}
-	partition, err := ChooseDevicePartition(o.Partition, o.Mode, d.KMI, d.HasInitBoot, d.SDK)
-	if err != nil {
-		return err
-	}
 
-	logger.Info("flash.device_information", "model", d.Model, "codename", d.Codename, "profile", profileName, "android", d.Android, "sdk", d.SDK)
 	logger.Info("flash.target", "partition", partition, "image", patched.Path, "sha256", patched.SHA256)
 	logger.Info("flash.stock_backup", "image", stock.Path, "sha256", stock.SHA256)
 	if !o.Yes {
@@ -80,18 +89,22 @@ func (s Service) Run(ctx context.Context, o Options) error {
 		return nil
 	}
 
-	if err := s.Devices.RebootBootloader(ctx, d.Serial); err != nil {
-		return i18n.WrapError("error.reboot_bootloader", err)
-	}
-	deadline := time.Now().Add(45 * time.Second)
-	for !s.Devices.IsFastboot(ctx, d.Serial) {
-		if time.Now().After(deadline) {
-			return i18n.NewError("error.fastboot_timeout")
+	if alreadyFastboot {
+		logger.Info("flash.device_fastboot", "codename", d.Codename)
+	} else {
+		if err := s.Devices.RebootBootloader(ctx, d.Serial); err != nil {
+			return i18n.WrapError("error.reboot_bootloader", err)
 		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(time.Second):
+		deadline := time.Now().Add(45 * time.Second)
+		for !s.Devices.IsFastboot(ctx, d.Serial) {
+			if time.Now().After(deadline) {
+				return i18n.NewError("error.fastboot_timeout")
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Second):
+			}
 		}
 	}
 	unlocked, detail := s.Devices.BootloaderUnlocked(ctx, d.Serial)
@@ -167,4 +180,24 @@ func ChooseDevicePartition(partition, mode, kmi string, hasInitBoot bool, sdk in
 		return "init_boot", nil
 	}
 	return "boot", nil
+}
+
+// fastbootPartition resolves the target partition for a device that is already
+// in fastboot. Without adb getprop the SDK and init_boot presence are unknown,
+// so lkm mode requires an explicit --partition.
+func fastbootPartition(partition, mode string) (string, error) {
+	if partition == "boot" || partition == "init_boot" {
+		return partition, nil
+	}
+	if partition != "auto" {
+		return "", i18n.NewError("error.partition_invalid")
+	}
+	switch mode {
+	case "gki":
+		return "boot", nil
+	case "lkm":
+		return "", i18n.NewError("error.partition_required_fastboot")
+	default:
+		return "", i18n.NewError("error.mode_invalid")
+	}
 }
