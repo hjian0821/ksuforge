@@ -35,3 +35,28 @@ func TestChooseDevicePartitionMatchesKernelSU(t *testing.T) {
 		t.Fatalf("got %q, %v", got, err)
 	}
 }
+
+func TestFastbootPartition(t *testing.T) {
+	tests := []struct {
+		partition, mode, want string
+		wantErr                bool
+	}{
+		{"boot", "lkm", "boot", false},
+		{"init_boot", "lkm", "init_boot", false},
+		{"auto", "gki", "boot", false},
+		{"auto", "lkm", "", true},
+		{"auto", "nope", "", true},
+	}
+	for _, tt := range tests {
+		got, err := fastbootPartition(tt.partition, tt.mode)
+		if tt.wantErr {
+			if err == nil {
+				t.Fatalf("fastbootPartition(%q, %q): expected error", tt.partition, tt.mode)
+			}
+			continue
+		}
+		if err != nil || got != tt.want {
+			t.Fatalf("fastbootPartition(%q, %q) = %q, %v; want %q", tt.partition, tt.mode, got, err, tt.want)
+		}
+	}
+}

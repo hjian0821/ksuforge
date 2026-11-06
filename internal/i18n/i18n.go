@@ -159,6 +159,7 @@ var messages = map[string]Message{
 	"patch.completed":     {Zh: "KernelSU Patch 完成", En: "KernelSU patch completed"},
 
 	"flash.device_information": {Zh: "刷写设备信息", En: "Device information"},
+	"flash.device_fastboot":    {Zh: "设备已在 Fastboot，跳过 adb 重启，直接校验并刷写", En: "Device is already in fastboot; skipping the adb reboot and flashing directly"},
 	"flash.target":             {Zh: "刷写目标", En: "Flash target"},
 	"flash.stock_backup":       {Zh: "原厂镜像备份", En: "Stock backup"},
 	"flash.preview_completed":  {Zh: "预演完成，未写入设备；添加 --yes 执行刷写", En: "Preview completed without writing to the device; add --yes to flash"},
@@ -220,8 +221,8 @@ var messages = map[string]Message{
 	"error.gki_kernel_required":    {Zh: "GKI 替换内核模式必须提供与 KMI 和压缩格式匹配的 --kernel", En: "GKI kernel replacement mode requires --kernel matching the KMI and compression format"},
 	"error.patch_failed":           {Zh: "KernelSU Patch 失败", En: "KernelSU patch failed"},
 
-	"error.fastboot_preexisting": {Zh: "设备已在 Fastboot；为避免失去厂商/Android 信息，请先启动系统再运行", En: "The device is already in fastboot; boot Android first so vendor and Android information can be verified"},
-	"error.oem_unsupported":      {Zh: "当前仅默认支持小米/Redmi/POCO；其他厂商需显式传入 --allow-other-oem", En: "Only Xiaomi/Redmi/POCO is supported by default; pass --allow-other-oem explicitly for other vendors"},
+	"error.partition_required_fastboot": {Zh: "设备已在 Fastboot，无法自动判断分区，请用 --partition 明确指定 boot 或 init_boot", En: "The device is already in fastboot; the partition cannot be auto-detected, specify --partition boot or init_boot"},
+	"error.oem_unsupported":            {Zh: "当前仅默认支持小米/Redmi/POCO；其他厂商需显式传入 --allow-other-oem", En: "Only Xiaomi/Redmi/POCO is supported by default; pass --allow-other-oem explicitly for other vendors"},
 	"error.reboot_bootloader":    {Zh: "重启到 Bootloader 失败", En: "Failed to reboot to the bootloader"},
 	"error.fastboot_timeout":     {Zh: "等待 Fastboot 设备超时", En: "Timed out waiting for the fastboot device"},
 	"error.bootloader_locked":    {Zh: "无法确认 Bootloader 已解锁（%s），拒绝刷写", En: "Unable to confirm that the bootloader is unlocked (%s); flashing was refused"},
