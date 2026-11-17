@@ -53,22 +53,14 @@ func TestPackageReleasesNamesAndContents(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(archives) != 2 {
-				t.Fatalf("archive count = %d, want 2", len(archives))
+			if len(archives) != 1 {
+				t.Fatalf("archive count = %d, want 1", len(archives))
 			}
 
 			guiRoot := "ksuforge-gui_1.2.3_" + tt.goos + "_amd64"
-			cliRoot := "ksuforge-cli_1.2.3_" + tt.goos + "_amd64"
-			cliName := "ksuforge-cli"
-			if tt.goos == "windows" {
-				cliName += ".exe"
-			}
 			assertArchive(t, tt.listFiles, archives[0], guiRoot+tt.ext,
 				[]string{filepath.ToSlash(filepath.Join(guiRoot, tt.gui)), filepath.ToSlash(filepath.Join(guiRoot, "KernelSU-GPL-3.0.txt"))},
-				[]string{cliName, "ksud", "payload-dumper"})
-			assertArchive(t, tt.listFiles, archives[1], cliRoot+tt.ext,
-				[]string{filepath.ToSlash(filepath.Join(cliRoot, cliName)), filepath.ToSlash(filepath.Join(cliRoot, "KernelSU-GPL-3.0.txt"))},
-				[]string{tt.gui, "ksud", "payload-dumper"})
+				[]string{"ksuforge-cli", "ksud", "payload-dumper"})
 		})
 	}
 }

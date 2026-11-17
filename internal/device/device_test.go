@@ -1,6 +1,9 @@
 package device
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestParseGetVar(t *testing.T) {
 	tests := []struct {
@@ -29,5 +32,50 @@ func TestParseKMI(t *testing.T) {
 		if got := ParseKMI(kernel); got != want {
 			t.Fatalf("ParseKMI(%q)=%q, want %q", kernel, got, want)
 		}
+	}
+}
+
+type captureRunner struct {
+	args []string
+}
+
+func (r *captureRunner) LookPath(name string) (string, error) { return name, nil }
+func (r *captureRunner) Run(_ context.Context, name string, args ...string) (string, error) {
+	r.args = append([]string{name}, args...)
+	return "", nil
+}
+
+func TestRebootFastboot(t *testing.T) {
+	var r captureRunner
+	c := Client{Runner: &r}
+	if err := c.RebootFastboot(context.Background(), "abc123"); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"adb", "-s", "abc123", "reboot", "fastboot"}
+	if len(r.args) != len(want) {
+		t.Fatalf("args = %v, want %v", r.args, want)
+	}
+	for i := range want {
+		if r.args[i] != want[i] {
+			t.Fatalf("args = %v, want %v", r.args, want)
+		}
+	}
+}
+
+type getvarRunner struct{ out string }
+
+func (r getvarRunner) LookPath(name string) (string, error) { return name, nil }
+func (r getvarRunner) Run(_ context.Context, name string, args ...string) (string, error) {
+	return r.out, nil
+}
+
+func TestIsUserspaceFastboot(t *testing.T) {
+	c := Client{Runner: getvarRunner{out: "is-userspace: yes\nFinished."}}
+	if !c.IsUserspaceFastboot(context.Background(), "abc") {
+		t.Fatal("expected userspace fastboot")
+	}
+	c = Client{Runner: getvarRunner{out: "FAILED (remote: 'GetVar Variable Not found')"}}
+	if c.IsUserspaceFastboot(context.Background(), "abc") {
+		t.Fatal("expected non-userspace fastboot")
 	}
 }

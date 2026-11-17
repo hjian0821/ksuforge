@@ -107,6 +107,13 @@ func (s Service) Run(ctx context.Context, o Options) (Result, error) {
 	logger.Info("device.target_image", "model", d.Model, "codename", d.Codename, "version", d.Version, "slot", d.Slot, "kmi", d.KMI, "image", partition+".img")
 	release := rom.Release{Version: d.Version}
 	romPath := strings.TrimSpace(o.ROMPath)
+	if romPath == "" {
+		stockDir := appPaths.StockDir(o.OutputDir, d.Codename, d.Version)
+		if imagePath, cachedRelease, ok := rom.FindVerifiedStock(stockDir, partition, d.Version); ok {
+			logger.Info("rom.verified_stock_reused", "path", imagePath, "version", cachedRelease.Version)
+			return Result{Device: d, Release: cachedRelease, Partition: partition, ImagePath: imagePath}, nil
+		}
+	}
 	if romPath != "" {
 		romPath, err = filepath.Abs(romPath)
 		if err != nil {
@@ -121,7 +128,7 @@ func (s Service) Run(ctx context.Context, o Options) (Result, error) {
 		}
 		logger.Info("rom.local_selected", "path", romPath)
 		if o.VerifyROM {
-			release, err = rom.FindRecovery(ctx, s.HTTPClient, o.Catalog, d.Codename, d.Version)
+			release, err = rom.FindRecovery(ctx, s.HTTPClient, o.Catalog, d.Codename, d.Version, d.Android, s.Out)
 			if err != nil {
 				return Result{}, err
 			}
@@ -136,7 +143,7 @@ func (s Service) Run(ctx context.Context, o Options) (Result, error) {
 			release.MD5 = fmt.Sprintf("unverified:%d:%d:%s", info.Size(), info.ModTime().UnixNano(), romPath)
 		}
 	} else {
-		release, err = rom.FindRecovery(ctx, s.HTTPClient, o.Catalog, d.Codename, d.Version)
+		release, err = rom.FindRecovery(ctx, s.HTTPClient, o.Catalog, d.Codename, d.Version, d.Android, s.Out)
 		if err != nil {
 			return Result{}, err
 		}

@@ -159,9 +159,16 @@ func ParseKMI(kernel string) string {
 	return "android" + android[:end] + "-" + parts[0] + "." + parts[1]
 }
 
-func (c Client) RebootBootloader(ctx context.Context, serial string) error {
-	_, err := c.Runner.Run(ctx, "adb", "-s", serial, "reboot", "bootloader")
+func (c Client) RebootFastboot(ctx context.Context, serial string) error {
+	// Bootloader fastboot is undetectable on some macOS setups, so enter userspace
+	// fastbootd instead; it can still flash boot/init_boot.
+	_, err := c.Runner.Run(ctx, "adb", "-s", serial, "reboot", "fastboot")
 	return err
+}
+
+func (c Client) IsUserspaceFastboot(ctx context.Context, serial string) bool {
+	v, ok := parseGetVar(c.GetVar(ctx, serial, "is-userspace"), "is-userspace")
+	return ok && (v == "yes" || v == "true" || v == "1")
 }
 
 func (c Client) IsFastboot(ctx context.Context, serial string) bool {

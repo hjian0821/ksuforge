@@ -6,14 +6,16 @@ import (
 )
 
 func TestSaveLoadRoundTrip(t *testing.T) {
-	file := filepath.Join(t.TempDir(), "nested", "config.json")
-	want := Config{OutputDir: "/tmp/artifacts", Language: "en"}
-	if err := want.SaveTo(file); err != nil {
-		t.Fatal(err)
-	}
-	got := LoadFrom(file)
-	if got != want {
-		t.Fatalf("got %+v, want %+v", got, want)
+	for _, autoFlash := range []bool{true, false} {
+		file := filepath.Join(t.TempDir(), "nested", "config.json")
+		want := Config{OutputDir: "/tmp/artifacts", Language: "en", AutoFlash: autoFlash, NoReboot: true}
+		if err := want.SaveTo(file); err != nil {
+			t.Fatal(err)
+		}
+		got := LoadFrom(file)
+		if got != want {
+			t.Fatalf("got %+v, want %+v", got, want)
+		}
 	}
 }
 func TestLoadMissingReturnsEmpty(t *testing.T) {

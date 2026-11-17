@@ -1,7 +1,7 @@
 # Bundled ksud assets
 
 This directory holds the official KernelSU `ksud` binaries that are embedded
-into `ksuforge-cli` and `ksuforge` with `go:embed`.
+into the `ksuforge` desktop application with `go:embed`.
 
 The binaries are ignored by git. `make tools` (or a Wails pre-build hook) runs
 `go run ./cmd/fetchtools`, which downloads and verifies the binary for the

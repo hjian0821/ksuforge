@@ -14,6 +14,10 @@ export function ChooseOutputDirectory() {
   return window['go']['main']['App']['ChooseOutputDirectory']();
 }
 
+export function CleanStorage(arg1, arg2) {
+  return window['go']['main']['App']['CleanStorage'](arg1, arg2);
+}
+
 export function Confirm(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['Confirm'](arg1, arg2, arg3, arg4);
 }
@@ -26,6 +30,10 @@ export function Devices() {
   return window['go']['main']['App']['Devices']();
 }
 
+export function ExportRunLog() {
+  return window['go']['main']['App']['ExportRunLog']();
+}
+
 export function GetSettings() {
   return window['go']['main']['App']['GetSettings']();
 }
@@ -36,6 +44,10 @@ export function Inspect(arg1) {
 
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
+}
+
+export function ScanStorage() {
+  return window['go']['main']['App']['ScanStorage']();
 }
 
 export function Start(arg1) {

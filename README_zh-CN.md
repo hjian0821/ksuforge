@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-KSUForge 是一款使用 Go 和 Wails 构建的 KernelSU 镜像准备与安装工具，同时提供桌面 GUI 和命令行界面。它可以识别 Android 设备、下载与当前系统版本完全匹配的官方 Recovery ROM、提取并修补启动镜像，并在完成安全检查后通过 Fastboot 刷入设备。
+KSUForge 是一款使用 Go 和 Wails 构建的 KernelSU 镜像准备与安装工具，提供跨平台桌面 GUI。它可以识别 Android 设备、下载与当前系统版本完全匹配的官方 Recovery ROM、提取并修补启动镜像，并在完成安全检查后通过 Fastboot 刷入设备。
 
 目前默认支持 Xiaomi、Redmi 和 POCO 设备，项目内部保留了面向其他厂商的 profile 扩展能力。
 
@@ -11,10 +11,10 @@ KSUForge 是一款使用 Go 和 Wails 构建的 KernelSU 镜像准备与安装�
 
 ## 功能特性
 
-- 提供跨平台桌面 GUI 和独立 CLI
+- 提供跨平台桌面 GUI
 - 检测 `adb`、`fastboot` 以及已连接设备
 - 读取设备型号、代号、Android 版本、系统版本、当前 slot、内核版本和 KMI
-- 自动查找与设备当前完整系统版本一致的 Xiaomi Recovery ROM
+- 优先查询小米官方 OTA 接口，失败或未匹配时回退到配置的 ROM 索引；仅使用与设备当前完整系统版本一致且提供 MD5 的 Recovery 完整包
 - 自动测速多个官方 OTA 镜像，支持并行分片下载、断点续传与失败切换
 - 校验 ROM 的 MD5，以及启动镜像的 magic、大小和 SHA-256
 - 从 ZIP 或 `payload.bin` 提取 `boot.img` / `init_boot.img`
@@ -49,27 +49,25 @@ KSUForge 是一款使用 Go 和 Wails 构建的 KernelSU 镜像准备与安装�
 - [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)，并确保 `adb` 和 `fastboot` 位于 `PATH`
 - 设备已开启 USB 调试并授权当前电脑
 
-GUI 和 CLI 发布包都已经内置受支持平台的 `ksud` 和 `payload-dumper`，通常不需要单独安装。使用其他版本时，可以通过 CLI 的 `--ksud` 参数或 GUI 高级设置指定外部 `ksud`。
+桌面发布包已经内置受支持平台的 `ksud` 和 `payload-dumper`，通常不需要单独安装。使用其他版本时，可以通过 GUI 高级设置指定外部 `ksud`。
 
 ## 安装
 
 请从 [GitHub Releases](https://github.com/hjian0821/ksuforge/releases) 下载与系统和架构对应的压缩包：
 
 - 普通用户下载 `ksuforge-gui_*` 桌面版。
-- 只在需要终端或脚本调用时下载 `ksuforge-cli_*` 命令行版。
-- 除非需要同时使用两种界面，否则不必下载两份。
 - Apple Silicon Mac 选择 `darwin_arm64`，Intel Mac 选择 `darwin_amd64`。
 - 大多数 Windows 和 Linux 电脑选择 `amd64`。
 
-GUI 与 CLI 分开打包：
+桌面应用发布包：
 
-| 系统 | 架构 | GUI 压缩包 | CLI 压缩包 |
-| --- | --- | --- | --- |
-| macOS | ARM64 | `ksuforge-gui_<版本>_darwin_arm64.tar.gz` | `ksuforge-cli_<版本>_darwin_arm64.tar.gz` |
-| macOS | AMD64 | `ksuforge-gui_<版本>_darwin_amd64.tar.gz` | `ksuforge-cli_<版本>_darwin_amd64.tar.gz` |
-| Linux | ARM64 | `ksuforge-gui_<版本>_linux_arm64.tar.gz` | `ksuforge-cli_<版本>_linux_arm64.tar.gz` |
-| Linux | AMD64 | `ksuforge-gui_<版本>_linux_amd64.tar.gz` | `ksuforge-cli_<版本>_linux_amd64.tar.gz` |
-| Windows | AMD64 | `ksuforge-gui_<版本>_windows_amd64.zip` | `ksuforge-cli_<版本>_windows_amd64.zip` |
+| 系统 | 架构 | GUI 压缩包 |
+| --- | --- | --- |
+| macOS | ARM64 | `ksuforge-gui_<版本>_darwin_arm64.tar.gz` |
+| macOS | AMD64 | `ksuforge-gui_<版本>_darwin_amd64.tar.gz` |
+| Linux | ARM64 | `ksuforge-gui_<版本>_linux_arm64.tar.gz` |
+| Linux | AMD64 | `ksuforge-gui_<版本>_linux_amd64.tar.gz` |
+| Windows | AMD64 | `ksuforge-gui_<版本>_windows_amd64.zip` |
 
 ## 使用方法
 
@@ -85,76 +83,12 @@ GUI 与 CLI 分开打包：
 
 默认产物目录为 `~/Downloads/KSUForge`。GUI 还可以设置下载并发数、自定义 HTTPS 镜像、ROM 索引地址、默认模式、目标分区、输出目录、界面语言和日志滚动行为。
 
-### 命令行
-
-先检查运行环境和设备连接：
-
-```bash
-ksuforge-cli doctor
-ksuforge-cli devices
-ksuforge-cli device-info
-```
-
-执行完整流程：
-
-```bash
-# 下载 ROM、提取并 patch；不会执行刷写
-ksuforge-cli install
-
-# 确认信息无误后，自动进入 Fastboot 并执行刷写
-ksuforge-cli install --yes
-```
-
-指定设备、模式或输出目录：
-
-```bash
-ksuforge-cli install \
-  --serial DEVICE_SERIAL \
-  --mode lkm \
-  --partition auto \
-  --output-dir ./ksuforge-output
-```
-
-也可以分步运行：
-
-```bash
-# 1. 下载同版本 ROM 并提取原厂镜像
-ksuforge-cli prepare --output-dir ./ksuforge-output --mode lkm
-
-# 2. 修补原厂镜像
-ksuforge-cli patch \
-  --image ./ksuforge-output/stock/DEVICE/VERSION/init_boot.img \
-  --kmi android14-6.1 \
-  --output-dir ./ksuforge-output
-
-# 3. 预演刷写，不会写入设备
-ksuforge-cli flash \
-  --image ./ksuforge-output/patched/DEVICE/VERSION/kernelsu-patched-init_boot.img \
-  --stock-backup ./ksuforge-output/stock/DEVICE/VERSION/init_boot.img \
-  --mode lkm
-
-# 4. 核对输出后执行真实刷写
-ksuforge-cli flash \
-  --image ./ksuforge-output/patched/DEVICE/VERSION/kernelsu-patched-init_boot.img \
-  --stock-backup ./ksuforge-output/stock/DEVICE/VERSION/init_boot.img \
-  --mode lkm \
-  --yes
-```
-
-查看完整命令帮助：
-
-```bash
-ksuforge-cli --help
-```
-
-使用 `--lang zh` 或 `--lang en` 可以临时指定 CLI 语言：
-
-```bash
-ksuforge-cli --lang en device-info
-```
-
 > [!NOTE]
-> 自动 ROM 下载目前仅支持 Xiaomi、Redmi 和 POCO。找不到完全一致的系统版本时，程序会停止，不会使用“最新版本”替代。非 Xiaomi 设备的通用刷写路径仅用于适配开发和验证，需要显式传入 `--allow-other-oem`。
+> 自动 ROM 下载目前仅支持 Xiaomi、Redmi 和 POCO。找不到完全一致的系统版本时，程序会停止，不会使用“最新版本”替代。
+
+运行日志通过左侧日志图标单独查看，支持搜索、级别与阶段筛选、事件详情和导出；切换页面不会中断任务。
+
+设置中的“存储与清理”按设备和系统版本展示本机产物。默认仅勾选已有同版校验备份的 ROM 完整包，保留未完成下载、原厂备份和修补镜像；用户可手动选择，删除前会显示原生确认框。只清理当前输出目录内可识别的文件，任务运行时不可清理。删除 ROM 后，后续任务可直接复用版本、来源校验记录和 SHA-256 均匹配的原厂镜像；显式选择的本地 ROM 仍优先使用。
 
 ## 产物目录
 
@@ -168,7 +102,7 @@ KSUForge 按类型、设备代号和系统版本保存文件，避免不同设�
 └── patched/<设备代号>/<系统版本>/kernelsu-patched-<分区>.img
 ```
 
-下载中的文件会使用 `.part` 和 `.part.json` 保存分片状态，下次运行时可以继续下载。配置和日志保存在各系统的标准应用数据目录中，CLI 与 GUI 共用配置。
+下载中的文件会使用 `.part` 和 `.part.json` 保存分片状态，下次运行时可以继续下载。配置和日志保存在各系统的标准应用数据目录中。
 
 ## 从源码构建
 
@@ -187,24 +121,19 @@ go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 
 首次构建时，构建脚本会从官方 GitHub Release 下载匹配平台的 KernelSU `ksud` 和 `payload-dumper-go`，校验 SHA-256 后嵌入应用；已经存在且有效的文件会直接复用。
 
-### 构建全部应用
+### 构建桌面应用
 
 ```bash
 make build
 ```
 
+macOS 构建会通过 `xcrun` 自动选择当前 Xcode 配套的 SDK，避免与 Command Line Tools 的 SDK 混用。也可通过 `SDKROOT=/path/to/MacOSX.sdk make build` 显式指定 SDK。
+
 构建结果写入仓库根目录的 `bin/`：
 
-- macOS：`bin/ksuforge.app`、`bin/ksuforge-cli`
-- Linux：`bin/ksuforge`、`bin/ksuforge-cli`
-- Windows：`bin/ksuforge.exe`、`bin/ksuforge-cli.exe`
-
-### 分别构建 CLI 或 GUI
-
-```bash
-make cli
-make gui
-```
+- macOS：`bin/ksuforge.app`
+- Linux：`bin/ksuforge`
+- Windows：`bin/ksuforge.exe`
 
 也可以直接构建 GUI：
 
@@ -214,6 +143,8 @@ wails build -o ../../../../bin/ksuforge
 ```
 
 Windows 下请将输出文件名改为 `../../../../bin/ksuforge.exe`。
+
+macOS 下直接调用 Wails 时，请先执行 `export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"`。
 
 ### 测试
 
@@ -225,7 +156,7 @@ make test
 
 ## 发布构建
 
-在当前系统上分别生成 GUI 和 CLI 发布压缩包：
+在当前系统上生成 GUI 发布压缩包：
 
 ```bash
 make release VERSION=v1.2.3
@@ -235,7 +166,6 @@ make release VERSION=v1.2.3
 
 ```text
 ksuforge-gui_<版本>_<系统>_<架构>.tar.gz
-ksuforge-cli_<版本>_<系统>_<架构>.tar.gz
 
 # Windows 使用 .zip，不使用 .tar.gz
 ```

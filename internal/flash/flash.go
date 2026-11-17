@@ -5,7 +5,6 @@ import (
 	"io"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/hjian0821/ksuforge/internal/device"
 	"github.com/hjian0821/ksuforge/internal/i18n"
@@ -89,27 +88,29 @@ func (s Service) Run(ctx context.Context, o Options) error {
 		return nil
 	}
 
+	if _, err := s.Devices.Runner.LookPath("fastboot"); err != nil {
+		return i18n.WrapError("error.fastboot_tool", err)
+	}
 	if alreadyFastboot {
 		logger.Info("flash.device_fastboot", "codename", d.Codename)
 	} else {
-		if err := s.Devices.RebootBootloader(ctx, d.Serial); err != nil {
-			return i18n.WrapError("error.reboot_bootloader", err)
+		if err := s.Devices.RebootFastboot(ctx, d.Serial); err != nil {
+			// The reboot tears down the adb connection as the device resets, so adb
+			// reports "device offline" even when the reboot is proceeding.
+			// waitFastboot below is the authoritative check.
+			logger.Warn("flash.reboot_ignored_error", "serial", d.Serial, "error", err)
 		}
-		deadline := time.Now().Add(45 * time.Second)
-		for !s.Devices.IsFastboot(ctx, d.Serial) {
-			if time.Now().After(deadline) {
-				return i18n.NewError("error.fastboot_timeout")
-			}
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(time.Second):
-			}
+		logger.Info("flash.reboot_submitted", "serial", d.Serial)
+		if err := s.waitFastboot(ctx, d.Serial, fastbootWaitTimeout); err != nil {
+			return err
 		}
 	}
-	unlocked, detail := s.Devices.BootloaderUnlocked(ctx, d.Serial)
-	if !unlocked {
-		return i18n.NewError("error.bootloader_locked", detail)
+	logger.Info("workflow.step.validate_flash", "step", 7, "total", 8)
+	if !s.Devices.IsUserspaceFastboot(ctx, d.Serial) {
+		unlocked, detail := s.Devices.BootloaderUnlocked(ctx, d.Serial)
+		if !unlocked {
+			return i18n.NewError("error.bootloader_locked", detail)
+		}
 	}
 	if currentSlot := s.Devices.CurrentSlot(ctx, d.Serial); d.Slot != "" && currentSlot != "" && currentSlot != d.Slot {
 		return i18n.NewError("error.slot_mismatch", d.Slot, currentSlot)
@@ -184,7 +185,7 @@ func ChooseDevicePartition(partition, mode, kmi string, hasInitBoot bool, sdk in
 
 // fastbootPartition resolves the target partition for a device that is already
 // in fastboot. Without adb getprop the SDK and init_boot presence are unknown,
-// so lkm mode requires an explicit --partition.
+// so lkm mode requires an explicit partition.
 func fastbootPartition(partition, mode string) (string, error) {
 	if partition == "boot" || partition == "init_boot" {
 		return partition, nil

@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README_zh-CN.md)
 
-KSUForge is a KernelSU image preparation and installation tool built with Go and Wails. It provides both a desktop GUI and a command-line interface. KSUForge can identify an Android device, download the official Recovery ROM that exactly matches its current system version, extract and patch the boot image, and flash it through Fastboot after performing safety checks.
+KSUForge is a KernelSU image preparation and installation tool built with Go and Wails. It provides a cross-platform desktop GUI. KSUForge can identify an Android device, download the official Recovery ROM that exactly matches its current system version, extract and patch the boot image, and flash it through Fastboot after performing safety checks.
 
 Xiaomi, Redmi, and POCO devices are supported by default. The project also provides a profile-based extension point for other manufacturers.
 
@@ -11,10 +11,10 @@ Xiaomi, Redmi, and POCO devices are supported by default. The project also provi
 
 ## Features
 
-- Cross-platform desktop GUI and standalone CLI
+- Cross-platform desktop GUI
 - Detection of `adb`, `fastboot`, and connected devices
 - Device model, codename, Android version, build version, active slot, kernel version, and KMI detection
-- Automatic lookup of a Xiaomi Recovery ROM that exactly matches the installed build
+- Query Xiaomi’s official OTA API first, falling back to the configured ROM catalog when unavailable or unmatched; require an exact-build full Recovery ROM with an MD5 checksum
 - Automatic benchmarking of official OTA mirrors, with parallel downloads, resume support, and mirror failover
 - ROM MD5 verification and boot image magic, size, and SHA-256 validation
 - Extraction of `boot.img` or `init_boot.img` from ZIP archives and `payload.bin`
@@ -49,27 +49,25 @@ Before running KSUForge, make sure you have:
 - [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools), with `adb` and `fastboot` available in `PATH`
 - USB debugging enabled and the computer authorized on the device
 
-Both the GUI and CLI packages contain `ksud` and `payload-dumper` for supported platforms, so they normally do not need to be installed separately. To use another `ksud` version, specify it with the CLI `--ksud` option or in the GUI advanced settings.
+The desktop packages contain `ksud` and `payload-dumper` for supported platforms, so they normally do not need to be installed separately. To use another `ksud` version, specify it in the GUI advanced settings.
 
 ## Installation
 
 Download the latest package for your operating system and architecture from [GitHub Releases](https://github.com/hjian0821/ksuforge/releases):
 
 - Download a `ksuforge-gui_*` archive for the desktop application.
-- Download a `ksuforge-cli_*` archive only if you want the command-line tool.
-- Do not download both unless you intend to use both interfaces.
 - Apple Silicon Macs use `darwin_arm64`; Intel Macs use `darwin_amd64`.
 - Most Windows and Linux PCs use `amd64`.
 
-GUI and CLI are packaged separately:
+Desktop application packages:
 
-| Operating system | Architecture | GUI archive | CLI archive |
-| --- | --- | --- | --- |
-| macOS | ARM64 | `ksuforge-gui_<version>_darwin_arm64.tar.gz` | `ksuforge-cli_<version>_darwin_arm64.tar.gz` |
-| macOS | AMD64 | `ksuforge-gui_<version>_darwin_amd64.tar.gz` | `ksuforge-cli_<version>_darwin_amd64.tar.gz` |
-| Linux | ARM64 | `ksuforge-gui_<version>_linux_arm64.tar.gz` | `ksuforge-cli_<version>_linux_arm64.tar.gz` |
-| Linux | AMD64 | `ksuforge-gui_<version>_linux_amd64.tar.gz` | `ksuforge-cli_<version>_linux_amd64.tar.gz` |
-| Windows | AMD64 | `ksuforge-gui_<version>_windows_amd64.zip` | `ksuforge-cli_<version>_windows_amd64.zip` |
+| Operating system | Architecture | GUI archive |
+| --- | --- | --- |
+| macOS | ARM64 | `ksuforge-gui_<version>_darwin_arm64.tar.gz` |
+| macOS | AMD64 | `ksuforge-gui_<version>_darwin_amd64.tar.gz` |
+| Linux | ARM64 | `ksuforge-gui_<version>_linux_arm64.tar.gz` |
+| Linux | AMD64 | `ksuforge-gui_<version>_linux_amd64.tar.gz` |
+| Windows | AMD64 | `ksuforge-gui_<version>_windows_amd64.zip` |
 
 ## Usage
 
@@ -85,76 +83,12 @@ GUI and CLI are packaged separately:
 
 The default artifact directory is `~/Downloads/KSUForge`. The GUI also lets you configure download concurrency, custom HTTPS mirrors, the ROM index URL, default mode and partition, output directory, interface language, and log scrolling.
 
-### Command line
-
-Check the environment and connected devices first:
-
-```bash
-ksuforge-cli doctor
-ksuforge-cli devices
-ksuforge-cli device-info
-```
-
-Run the complete workflow:
-
-```bash
-# Download the ROM, extract the image, and patch it without flashing
-ksuforge-cli install
-
-# Reboot into Fastboot and flash after all checks pass
-ksuforge-cli install --yes
-```
-
-Select a device, mode, partition, or output directory:
-
-```bash
-ksuforge-cli install \
-  --serial DEVICE_SERIAL \
-  --mode lkm \
-  --partition auto \
-  --output-dir ./ksuforge-output
-```
-
-The workflow can also be run one step at a time:
-
-```bash
-# 1. Download the matching ROM and extract the stock image
-ksuforge-cli prepare --output-dir ./ksuforge-output --mode lkm
-
-# 2. Patch the stock image
-ksuforge-cli patch \
-  --image ./ksuforge-output/stock/DEVICE/VERSION/init_boot.img \
-  --kmi android14-6.1 \
-  --output-dir ./ksuforge-output
-
-# 3. Preview the flash operation without writing to the device
-ksuforge-cli flash \
-  --image ./ksuforge-output/patched/DEVICE/VERSION/kernelsu-patched-init_boot.img \
-  --stock-backup ./ksuforge-output/stock/DEVICE/VERSION/init_boot.img \
-  --mode lkm
-
-# 4. Flash after reviewing the preview
-ksuforge-cli flash \
-  --image ./ksuforge-output/patched/DEVICE/VERSION/kernelsu-patched-init_boot.img \
-  --stock-backup ./ksuforge-output/stock/DEVICE/VERSION/init_boot.img \
-  --mode lkm \
-  --yes
-```
-
-Display the complete CLI help:
-
-```bash
-ksuforge-cli --help
-```
-
-Use `--lang zh` or `--lang en` before the command to override the configured CLI language:
-
-```bash
-ksuforge-cli --lang en device-info
-```
-
 > [!NOTE]
-> Automatic ROM downloads currently support Xiaomi, Redmi, and POCO devices only. KSUForge stops if it cannot find an exact build match; it never substitutes the latest available ROM. The generic flashing path for other manufacturers is intended for adapter development and validation and requires the explicit `--allow-other-oem` option.
+> Automatic ROM downloads currently support Xiaomi, Redmi, and POCO devices only. KSUForge stops if it cannot find an exact build match; it never substitutes the latest available ROM.
+
+Open the dedicated log view from the left toolbar to search, filter by level or stage, inspect events, and export the task transcript. Switching views keeps the task running.
+
+Settings → Storage & cleanup groups local artifacts by device and build. Only complete ROM packages with a verified matching stock backup are selected by default; partial downloads, stock backups and patched images remain unselected. Deletion requires a native confirmation and is unavailable during a task. Only recognized files in the configured output directory are listed. After deleting a ROM, a later task can reuse a stock image whose build, source verification record and SHA-256 match. An explicitly selected local ROM still takes precedence.
 
 ## Artifact Layout
 
@@ -168,7 +102,7 @@ KSUForge stores files by type, device codename, and build version so that artifa
 └── patched/<codename>/<build-version>/kernelsu-patched-<partition>.img
 ```
 
-Downloads in progress use `.part` and `.part.json` files to preserve chunk state and can resume during the next run. Configuration and logs are stored in the standard application data directories for each operating system. The CLI and GUI share the same configuration.
+Downloads in progress use `.part` and `.part.json` files to preserve chunk state and can resume during the next run. Configuration and logs are stored in the standard application data directories for each operating system.
 
 ## Building from Source
 
@@ -185,26 +119,21 @@ Install the Wails CLI:
 go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 ```
 
-On the first build, the build scripts download the appropriate KernelSU `ksud` and `payload-dumper-go` binaries from their official GitHub Releases, verify their SHA-256 checksums, and embed them in the applications. Existing verified files are reused.
+On the first build, the build scripts download the appropriate KernelSU `ksud` and `payload-dumper-go` binaries from their official GitHub Releases, verify their SHA-256 checksums, and embed them in the application. Existing verified files are reused.
 
-### Build all applications
+### Build the desktop application
 
 ```bash
 make build
 ```
 
+On macOS, Make uses `xcrun` to select the SDK paired with the active Xcode toolchain, avoiding an incompatible Command Line Tools SDK. Override it explicitly with `SDKROOT=/path/to/MacOSX.sdk make build` if needed.
+
 Build outputs are written to the repository's `bin/` directory:
 
-- macOS: `bin/ksuforge.app` and `bin/ksuforge-cli`
-- Linux: `bin/ksuforge` and `bin/ksuforge-cli`
-- Windows: `bin/ksuforge.exe` and `bin/ksuforge-cli.exe`
-
-### Build the CLI or GUI separately
-
-```bash
-make cli
-make gui
-```
+- macOS: `bin/ksuforge.app`
+- Linux: `bin/ksuforge`
+- Windows: `bin/ksuforge.exe`
 
 You can also build the GUI directly:
 
@@ -214,6 +143,8 @@ wails build -o ../../../../bin/ksuforge
 ```
 
 On Windows, use `../../../../bin/ksuforge.exe` as the output path.
+
+When invoking Wails directly on macOS, first run `export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"`.
 
 ### Run tests
 
@@ -225,7 +156,7 @@ This command runs all Go tests followed by `go vet`.
 
 ## Release Builds
 
-Create separate GUI and CLI release archives for the current target:
+Create the GUI release archive for the current target:
 
 ```bash
 make release VERSION=v1.2.3
@@ -235,7 +166,6 @@ Archives are written to `bin/` using the following naming scheme:
 
 ```text
 ksuforge-gui_<version>_<os>_<architecture>.tar.gz
-ksuforge-cli_<version>_<os>_<architecture>.tar.gz
 
 # Windows uses .zip instead of .tar.gz
 ```

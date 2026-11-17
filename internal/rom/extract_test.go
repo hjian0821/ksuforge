@@ -111,3 +111,46 @@ func TestExtractReextractsOnVersionMismatch(t *testing.T) {
 		t.Fatalf("sidecar not refreshed: %s, %v", data, err)
 	}
 }
+
+func TestExtractReextractsTamperedImage(t *testing.T) {
+	dir := t.TempDir()
+	romPath := filepath.Join(dir, "rom.zip")
+	f, err := os.Create(romPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zw := zip.NewWriter(f)
+	entry, err := zw.Create("boot.img")
+	if err != nil {
+		t.Fatal(err)
+	}
+	original := make([]byte, 4096)
+	copy(original, "ANDROID!")
+	if _, err := entry.Write(original); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "out")
+	release := Release{Version: "OS1", MD5: "abc"}
+	destination, err := ExtractImage(context.Background(), romPath, "boot", out, release)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tampered := append([]byte(nil), original...)
+	tampered[100] = 1
+	if err := os.WriteFile(destination, tampered, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExtractImage(context.Background(), romPath, "boot", out, release); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(destination)
+	if err != nil || string(got) != string(original) {
+		t.Fatalf("tampered image reused: %v", err)
+	}
+}

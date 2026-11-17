@@ -38,7 +38,7 @@ func ExtractImage(ctx context.Context, romPath, partition, outputDir string, rel
 	destination := filepath.Join(outputDir, partition+".img")
 	statePath := destination + ".json"
 	if _, err := os.Stat(destination); err == nil {
-		if _, err := bootimage.Inspect(destination); err == nil && extractStateMatches(statePath, release) {
+		if info, err := bootimage.Inspect(destination); err == nil && extractStateMatches(statePath, release, info.SHA256) {
 			logger.Info("rom.image_reused", "path", destination)
 			return destination, nil
 		}
@@ -100,10 +100,7 @@ func ExtractImage(ctx context.Context, romPath, partition, outputDir string, rel
 // extractStateMatches reports whether an existing image can be reused for the
 // requested release. A recorded version or MD5 that differs forces a re-extract;
 // an unreadable or absent sidecar falls back to trusting a valid image.
-func extractStateMatches(statePath string, release Release) bool {
-	if release.Version == "" && release.MD5 == "" {
-		return true
-	}
+func extractStateMatches(statePath string, release Release, sha256 string) bool {
 	data, err := os.ReadFile(statePath)
 	if err != nil {
 		return true
@@ -111,6 +108,9 @@ func extractStateMatches(statePath string, release Release) bool {
 	var state extractState
 	if err := json.Unmarshal(data, &state); err != nil {
 		return true
+	}
+	if state.SHA256 != "" && !strings.EqualFold(state.SHA256, sha256) {
+		return false
 	}
 	if release.Version != "" && state.Version != "" && state.Version != release.Version {
 		return false

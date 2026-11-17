@@ -36,7 +36,7 @@ type rss struct {
 	} `xml:"channel"`
 }
 
-func FindRecovery(ctx context.Context, client *http.Client, catalogTemplate, codename, version string) (Release, error) {
+func findCatalogRecovery(ctx context.Context, client *http.Client, catalogTemplate, codename, version string) (Release, error) {
 	if !validCodename(codename) {
 		return Release{}, i18n.NewError("error.codename_invalid", codename)
 	}

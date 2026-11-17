@@ -1,310 +1,852 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ksuforge</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="app">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KSUForge</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" aria-label="应用工具栏">
+        <a
+          class="brand"
+          href="#workspace"
+          aria-label="KSUForge"
+          title="KSUForge"
+          ><img src="ksuforge-icon.svg" alt=""
+        /></a>
 
-  <div class="topbar">
-    <div class="brand">
-      <div class="logo">
-        <img src="ksuforge-icon.svg" alt="">
-      </div>
-      <div>
-        <h1>ksuforge</h1>
-        <p data-i18n="tagline">连接设备后，自动完成匹配、下载、提取、patch 与安全刷写。</p>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <span class="pill off" id="devicePill"><span class="dot"></span><span id="deviceText" data-i18n="device.disconnected">未检测到设备</span></span>
-      <button class="icon-btn settings-button" id="openSettings" type="button" data-i18n-title="settings.title" title="设置">
-        <span data-i18n="settings.short">设置</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="progress-head">
-    <div class="ph-left">
-      <span class="lbl" data-i18n="progress.step">步骤</span>
-      <strong id="stepNow">1</strong>
-      <span class="total">/ <span id="stepTotal">5</span></span>
-      <span class="name" id="stepName" data-i18n="step.usb">USB / ADB</span>
-    </div>
-  </div>
-
-  <div class="stepper prepare-flow" id="stepper">
-    <div class="track"><i id="trackFill"></i></div>
-    <div class="step active" data-step="1"><div class="node">1</div><div class="name" data-i18n="step.usb">USB / ADB</div></div>
-    <div class="step" data-step="2"><div class="node">2</div><div class="name" data-i18n="step.info">设备信息</div></div>
-    <div class="step" data-step="3"><div class="node">3</div><div class="name" data-i18n="step.fetch">获取原厂镜像</div></div>
-    <div class="step" data-step="4"><div class="node">4</div><div class="name" data-i18n="step.patch">KernelSU Patch</div></div>
-    <div class="step" data-step="5"><div class="node">5</div><div class="name" data-i18n="step.ready">准备完成</div></div>
-  </div>
-
-  <div class="layout">
-    <!-- configuration -->
-      <div class="card config-card">
-        <div class="card-head">
-          <h2><span data-i18n="config.title">安装配置</span></h2>
-          <span class="tag">CONFIG</span>
+        <nav aria-label="Workspace">
+          <a
+            class="nav-item selected"
+            href="#workspace"
+            aria-label="镜像工作台"
+            title="镜像工作台"
+            data-page="workspace"
+            aria-current="page"
+            data-i18n-title="nav.overview"
+            ><img src="icons/layout-dashboard.svg" alt="" /><span
+              data-i18n="nav.overview"
+              >镜像工作台</span
+            ><span class="nav-indicator"></span
+          ></a>
+          <a
+            class="nav-item"
+            href="#taskLog"
+            aria-label="运行日志"
+            title="运行日志"
+            data-page="logs"
+            data-i18n-title="log.title"
+            ><img src="icons/terminal-square.svg" alt="" /><span
+              data-i18n="log.title"
+              >运行日志</span
+            ></a
+          >
+        </nav>
+        <div class="sidebar-bottom">
+          <button
+            class="nav-item"
+            id="openSettings"
+            type="button"
+            aria-label="设置"
+            title="设置"
+          >
+            <img src="icons/settings-2.svg" alt="" /><span
+              data-i18n="settings.title"
+              >设置</span
+            >
+          </button>
+          <a
+            class="nav-item"
+            href="https://kernelsu.org/guide/installation.html"
+            id="docsLink"
+            aria-label="使用文档"
+            title="使用文档"
+            ><img src="icons/external-link.svg" alt="" /><span
+              data-i18n="nav.docs"
+              >使用文档</span
+            ></a
+          >
         </div>
-        <div class="card-body">
+      </aside>
+      <main class="workspace" id="workspace">
+        <header class="topbar">
+          <div class="breadcrumb">
+            <strong>KSUForge</strong>
+          </div>
+          <span class="pill off" id="devicePill"
+            ><span class="dot"></span
+            ><span id="deviceText" data-i18n="device.disconnected"
+              >未检测到设备</span
+            ></span
+          >
+        </header>
 
-          <div class="field">
-            <label><span data-i18n="field.device">ADB 设备</span></label>
-            <div class="control">
-              <select id="deviceSelect"></select>
-              <button class="btn" id="refresh" data-i18n="btn.refresh">刷新</button>
+        <section class="workflow-panel" aria-label="任务进度">
+          <div class="progress-head">
+            <span data-i18n="workspace.flow">操作流程</span>
+            <div class="ph-left">
+              <span class="lbl" data-i18n="progress.step">步骤</span
+              ><strong id="stepNow">1</strong
+              ><span class="total">/ <span id="stepTotal">5</span></span
+              ><span class="name" id="stepName">USB / ADB</span>
             </div>
           </div>
-
-          <div class="field">
-            <label><span data-i18n="field.ota">Recovery OTA 包</span><span class="hint" data-i18n="hint.ota">留空则自动匹配并下载</span></label>
-            <div class="control">
-              <input id="otaPath" data-i18n-placeholder="hint.ota.auto" placeholder="自动匹配当前系统版本" readonly spellcheck="false">
-              <button class="btn" id="chooseOTA" data-i18n="btn.choose">选择</button>
-              <button class="btn ghost hidden" id="clearOTA" data-i18n="btn.clear">清除</button>
-            </div>
-          </div>
-          <label class="switch local-rom-verify hidden" id="verifyROMOption">
-            <input type="checkbox" id="verifyROM" checked>
-            <span class="track"></span>
-            <span><span class="st" data-i18n="ota.verify">校验本地 OTA 的 MD5</span>
-            <span class="sd" data-i18n="ota.verify.desc">根据当前设备版本查询官方校验值，推荐保持开启。</span></span>
-          </label>
-
-          <details class="adv">
-            <summary><span class="chev">›</span><span data-i18n="advanced">高级选项</span></summary>
-            <div class="inner">
-              <div class="wide">
-                <label><span data-i18n="field.kmi">KMI 覆盖</span><span class="hint" data-i18n="hint.kmi">通常留空</span></label>
-                <input id="kmi" placeholder="android15-6.1" spellcheck="false">
-              </div>
-              <div class="wide" id="kernelField" style="display:none">
-                <label><span data-i18n="field.kernel">GKI 内核文件</span></label>
-                <div class="control"><input id="kernel" placeholder="Image" spellcheck="false"><button class="btn" id="chooseKernel" data-i18n="btn.choose">选择</button></div>
-              </div>
-            </div>
-          </details>
-
-          <div class="install-options">
-            <label class="switch install-option">
-              <input type="checkbox" id="setAutoFlash">
-              <span class="track"></span>
-              <span><span class="st" data-i18n="settings.autoFlash">默认自动刷写</span>
-              <span class="sd" data-i18n="toggle.flash.desc">会重启到 fastboot 并覆盖当前启动分区。</span></span>
-            </label>
-            <label class="switch install-option">
-              <input type="checkbox" id="setNoReboot">
-              <span class="track"></span>
-              <span><span class="st" data-i18n="settings.noReboot">默认刷写后不重启</span>
-              <span class="sd" data-i18n="toggle.noreboot.desc">停留在 fastboot，方便手动检查。</span></span>
-            </label>
-          </div>
-
-          <div class="actions">
-            <button class="btn ghost" id="btnPrepare" data-i18n="btn.prepare">仅准备镜像</button>
-            <button class="btn primary" id="btnStart" data-i18n="btn.start">开始执行</button>
-          </div>
-        </div>
-      </div>
-
-    <!-- device -->
-      <div class="card device-card">
-        <div class="card-head">
-          <h2><span data-i18n="device.title">设备信息</span></h2>
-          <span class="tag" id="deviceTag" data-i18n="device.none">未检测</span>
-        </div>
-        <div class="card-body">
-          <div id="deviceEmpty" class="device-empty">
-            <span class="phone-outline"></span>
-            <p data-i18n="device.none.title">尚未检测到设备</p>
-            <span data-i18n="device.none.hint">连接手机并开启 USB 调试</span>
-            <button class="btn" id="btnDetect" data-i18n="btn.detect">检测设备</button>
-          </div>
-          <div id="deviceData" style="display:none">
-            <div class="device-overview">
-              <div class="device-identity">
-                <span class="device-label" data-i18n="kv.model">机型</span>
-                <strong id="devModel">—</strong>
-                <span class="device-codename"><span data-i18n="kv.codename">代号</span> · <code id="devCodename">—</code></span>
-              </div>
-              <div class="android-version">
-                <span data-i18n="kv.android">Android</span>
-                <strong id="devAndroid">—</strong>
-              </div>
-            </div>
-            <dl class="device-details">
-              <div class="device-detail wide">
-                <dt data-i18n="kv.version">系统版本</dt><dd id="devVersion">—</dd>
-              </div>
-              <div class="device-detail">
-                <dt data-i18n="kv.slot">当前 Slot</dt><dd><span class="chip" id="devSlot">—</span></dd>
-              </div>
-              <div class="device-detail">
-                <dt data-i18n="kv.initboot">init_boot</dt><dd><span class="chip" id="devInitBoot">—</span></dd>
-              </div>
-              <div class="device-detail wide">
-                <dt data-i18n="kv.kmi">KMI</dt><dd><span class="chip" id="devKMI">—</span></dd>
-              </div>
-              <div class="device-detail wide">
-                <dt data-i18n="kv.kernel">内核</dt><dd id="devKernel">—</dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-      </div>
-
-      <!-- operation summary -->
-      <div class="card operation-card">
-        <div class="card-head">
-          <h2><span data-i18n="summary.title">本次操作</span></h2>
-          <span class="tag">PLAN</span>
-        </div>
-        <div class="card-body summary-grid">
-          <div class="summary-row"><span class="k" data-i18n="summary.mode">模式</span><span class="v" id="sumMode">LKM</span></div>
-          <div class="summary-row"><span class="k" data-i18n="summary.partition">目标分区</span><span class="v" id="sumPartition">—</span></div>
-          <div class="summary-row"><span class="k" data-i18n="summary.rom">匹配 ROM</span><span class="v" id="sumRom">—</span></div>
-          <div class="summary-row"><span class="k" data-i18n="summary.download">下载策略</span><span class="v" id="sumDownload">16 连接 · 自动镜像</span></div>
-          <div class="summary-row"><span class="k" data-i18n="summary.flash">刷写</span><span class="v" id="sumFlash" data-i18n="summary.flash.no">否（仅准备）</span></div>
-        </div>
-      </div>
-  </div>
-
-  <!-- console -->
-  <div class="card console">
-    <div class="card-head">
-      <div class="left">
-        <h2><span data-i18n="log.title">运行日志</span></h2>
-        <span class="status" id="logStatus" data-i18n="status.idle">空闲</span>
-      </div>
-      <div class="console-actions">
-        <button class="autoscroll on" id="autoScroll" type="button"><span class="dot"></span><span id="autoScrollText" data-i18n="log.autoScroll.on">自动滚动</span></button>
-        <button class="log-toggle" id="logToggle" type="button" aria-expanded="true" aria-controls="logBody">
-          <span class="chevron" aria-hidden="true">⌃</span>
-          <span id="logToggleText" data-i18n="log.collapse">折叠</span>
-        </button>
-      </div>
-    </div>
-    <div class="console-body" id="logBody">
-      <div class="progress" id="runBar" style="display:none"><i></i></div>
-      <pre id="log"><span class="m" data-i18n="log.idle">等待检测设备…</span></pre>
-    </div>
-  </div>
-
-  <div class="foot">
-    <span data-i18n="foot.note">真实刷写存在风险，请先解锁并备份。</span>
-    <a href="#" id="docsLink">KernelSU Docs ↗</a>
-  </div>
-
-  <div class="modal-backdrop hidden" id="settingsModal">
-    <div class="modal">
-      <div class="modal-head">
-        <h2 data-i18n="settings.title">设置</h2>
-        <button class="icon-btn" id="closeSettings" type="button" aria-label="关闭">
-          <span>×</span>
-        </button>
-      </div>
-      <div class="modal-body">
-
-        <div class="settings-section">
-          <h3 data-i18n="settings.general">通用</h3>
-          <div class="field">
-            <label><span data-i18n="settings.language">界面语言</span></label>
-            <select id="setLanguage">
-              <option value="zh">中文</option>
-              <option value="en">English</option>
-            </select>
-          </div>
-          <div class="field">
-            <label><span data-i18n="field.output">输出目录</span></label>
-            <div class="control">
-              <input id="setOutputDir" spellcheck="false">
-              <button class="btn" id="setChooseOutput" data-i18n="btn.choose">选择</button>
-            </div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="setLogScroll">
-            <span class="track"></span>
-            <span><span class="st" data-i18n="settings.logScroll">日志自动滚动</span>
-            <span class="sd" data-i18n="settings.logScroll.desc">运行时自动滚动到最新日志。</span></span>
-          </label>
-        </div>
-
-        <div class="settings-section">
-          <h3 data-i18n="settings.install">安装默认值</h3>
-          <div class="field">
-            <label><span data-i18n="field.mode">KernelSU 模式</span></label>
-            <select id="setMode">
-              <option value="lkm" data-i18n="mode.lkm">LKM</option>
-              <option value="gki" data-i18n="mode.gki">GKI 替换内核</option>
-            </select>
-          </div>
-          <div class="field">
-            <label><span data-i18n="field.partition">目标分区</span></label>
-            <select id="setPartition">
-              <option value="auto" data-i18n="partition.auto">自动（依据 KMI 与分区）</option>
-              <option value="boot">boot</option>
-              <option value="init_boot">init_boot</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="settings-section">
-          <h3 data-i18n="settings.advanced">下载与工具</h3>
-          <div class="download-config settings-download">
-            <div class="download-title">
+          <div class="stepper prepare-flow" id="stepper"></div>
+        </section>
+        <div class="layout">
+          <section class="card config-card">
+            <div class="card-head">
               <div>
-                <strong data-i18n="download.title">ROM 下载源</strong>
-                <p data-i18n="download.desc">留空则自动测速小米官方 CDN；自定义源优先参与测速。</p>
+                <h2 data-i18n="config.title">准备镜像</h2>
               </div>
-              <span class="resume-badge" data-i18n="download.resume">支持断点续传</span>
+
+              <span class="task-kind" data-i18n="native.taskKind"
+                >KernelSU 镜像修补</span
+              >
             </div>
-            <div class="field">
-              <label><span data-i18n="field.mirrors">镜像源基础地址</span><span class="hint" data-i18n="hint.mirrors">每行一个 HTTPS 地址</span></label>
-              <textarea id="setMirrors" rows="3" placeholder="https://mirror.example.com/xiaomi" spellcheck="false"></textarea>
-            </div>
-            <div class="download-row">
-              <div class="field">
-                <label><span data-i18n="field.connections">并发连接数</span><span class="hint">1–32</span></label>
-                <input id="setConnections" type="number" min="1" max="32" value="16">
+            <div class="card-body">
+              <div class="field mode-field">
+                <label data-i18n="field.mode">KernelSU 模式</label>
+                <div
+                  class="native-mode"
+                  role="group"
+                  aria-label="KernelSU mode"
+                >
+                  <button id="modeLKM" type="button" aria-pressed="true">
+                    LKM <span data-i18n="mode.recommended">推荐</span></button
+                  ><button id="modeGKI" type="button" aria-pressed="false">
+                    GKI
+                  </button>
+                </div>
+                <p
+                  class="mode-description"
+                  id="modeDescription"
+                  data-i18n="mode.lkm.desc"
+                >
+                  修补 init_boot / boot，保留原厂内核。
+                </p>
               </div>
-              <div class="download-note">
-                <span class="signal"></span>
-                <span data-i18n="download.strategy">并行分片 · 镜像故障切换 · MD5 校验</span>
+
+              <div class="field rom-field">
+                <label for="otaPath" data-i18n="field.ota"
+                  >原厂 Recovery 包</label
+                >
+                <div class="control">
+                  <input
+                    id="otaPath"
+                    data-i18n-placeholder="hint.ota.auto"
+                    placeholder="自动匹配当前系统版本"
+                    readonly=""
+                    spellcheck="false"
+                  /><button
+                    class="btn"
+                    id="chooseOTA"
+                    type="button"
+                    data-i18n="source.local"
+                  >
+                    选择本地包</button
+                  ><button
+                    class="btn ghost hidden"
+                    id="clearOTA"
+                    type="button"
+                    data-i18n="btn.clear"
+                  >
+                    清除
+                  </button>
+                </div>
+              </div>
+              <label class="switch local-rom-verify hidden" id="verifyROMOption"
+                ><input type="checkbox" id="verifyROM" checked="" /><span
+                  class="track"
+                ></span
+                ><span
+                  ><span class="st" data-i18n="ota.verify"
+                    >校验本地 OTA 的 MD5</span
+                  ><span class="sd" data-i18n="ota.verify.desc"
+                    >根据当前设备版本查询官方校验值，推荐保持开启。</span
+                  ></span
+                ></label
+              >
+              <details class="adv">
+                <summary>
+                  <img src="icons/chevron-right.svg" alt="" /><span
+                    data-i18n="advanced"
+                    >高级选项</span
+                  ><span class="hint" data-i18n="advanced.hint"
+                    >KMI 与 GKI 内核</span
+                  >
+                </summary>
+                <div class="inner">
+                  <div class="field">
+                    <label for="kmi"
+                      ><span data-i18n="field.kmi">KMI 覆盖</span
+                      ><span class="hint" data-i18n="hint.kmi"
+                        >通常留空</span
+                      ></label
+                    ><input
+                      id="kmi"
+                      placeholder="android15-6.6"
+                      spellcheck="false"
+                    />
+                  </div>
+                  <div class="field" id="kernelField" style="display: none">
+                    <label for="kernel" data-i18n="field.kernel"
+                      >GKI 内核文件</label
+                    >
+                    <div class="control">
+                      <input
+                        id="kernel"
+                        placeholder="Image"
+                        spellcheck="false"
+                      /><button
+                        class="btn"
+                        id="chooseKernel"
+                        type="button"
+                        data-i18n="btn.choose"
+                      >
+                        选择
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </details>
+              <div class="install-options">
+                <label class="switch install-option"
+                  ><input type="checkbox" id="setAutoFlash" /><span
+                    class="track"
+                  ></span
+                  ><span
+                    ><span class="st" data-i18n="toggle.flash"
+                      >下载并 patch 后自动刷写</span
+                    ><span class="sd" data-i18n="toggle.flash.desc"
+                      >会重启到 fastboot 并覆盖当前启动分区。</span
+                    ></span
+                  ></label
+                ><label class="switch install-option" id="noRebootOption"
+                  ><input type="checkbox" id="setNoReboot" /><span
+                    class="track"
+                  ></span
+                  ><span
+                    ><span class="st" data-i18n="toggle.noreboot"
+                      >刷写后不重启</span
+                    ><span class="sd" data-i18n="toggle.noreboot.desc"
+                      >停留在 fastboot，方便手动检查。</span
+                    ></span
+                  ></label
+                >
               </div>
             </div>
-          </div>
-          <div class="field">
-            <label><span data-i18n="settings.catalog">ROM 索引地址</span></label>
-            <input id="setCatalog" spellcheck="false" placeholder="https://.../%s.xml">
-            <div class="hint" style="margin-top:6px" data-i18n="settings.catalog.desc">必须为 HTTPS，且包含一个 %s 作为设备代号占位符。</div>
-          </div>
-          <div class="field">
-            <label><span data-i18n="settings.ksud">ksud 路径</span></label>
-            <div class="control">
-              <input id="setKsud" spellcheck="false" placeholder="bundled ksud">
-              <button class="btn" id="setChooseKsud" data-i18n="btn.choose">选择</button>
+            <div class="action-area">
+              <p id="actionHint" data-i18n="action.connect">
+                连接设备后即可开始。
+              </p>
+              <div class="actions">
+                <button
+                  class="btn ghost"
+                  id="btnPrepare"
+                  data-i18n="btn.prepare"
+                >
+                  仅准备镜像</button
+                ><button class="btn primary" id="btnStart">
+                  <span id="startLabel" data-i18n="btn.start"
+                    >开始准备镜像</span
+                  >
+                </button>
+              </div>
             </div>
-          </div>
+          </section>
+          <aside class="context-column">
+            <section class="card device-card">
+              <div class="card-head">
+                <h2 data-i18n="device.title">设备概览</h2>
+                <span class="tag" id="deviceTag" data-i18n="device.none"
+                  >未检测</span
+                >
+              </div>
+              <div class="card-body">
+                <div class="field device-picker">
+                  <label for="deviceSelect" data-i18n="field.device"
+                    >目标设备</label
+                  >
+                  <div class="control">
+                    <select id="deviceSelect"></select
+                    ><button
+                      class="btn icon-only"
+                      id="refresh"
+                      type="button"
+                      data-i18n-title="btn.refresh"
+                      title="刷新"
+                    >
+                      <img src="icons/refresh-cw.svg" alt="" /><span
+                        class="sr-only"
+                        data-i18n="btn.refresh"
+                        >刷新</span
+                      >
+                    </button>
+                  </div>
+                </div>
+                <div id="deviceEmpty" class="device-empty">
+                  <span class="device-empty-icon"
+                    ><img src="icons/smartphone.svg" alt=""
+                  /></span>
+                  <p data-i18n="device.none.title">连接你的 Android 设备</p>
+                  <span data-i18n="device.none.hint"
+                    >通过 USB 连接手机，并开启 USB 调试。</span
+                  ><button class="btn" id="btnDetect" data-i18n="btn.detect">
+                    检测设备
+                  </button>
+                </div>
+                <div id="deviceData" style="display: none">
+                  <div class="device-overview">
+                    <div class="device-identity">
+                      <strong id="devModel">—</strong
+                      ><span class="device-codename"
+                        ><code id="devCodename">—</code
+                        ><span class="device-connected-dot"></span
+                        ><span data-i18n="device.ready">已连接</span></span
+                      >
+                    </div>
+                    <div class="android-version">
+                      <span>Android</span><strong id="devAndroid">—</strong>
+                    </div>
+                  </div>
+                  <dl class="device-details">
+                    <div class="device-detail wide">
+                      <dt data-i18n="kv.version">系统版本</dt>
+                      <dd id="devVersion">—</dd>
+                    </div>
+                    <div class="device-detail">
+                      <dt data-i18n="kv.slot">当前 Slot</dt>
+                      <dd id="devSlot">—</dd>
+                    </div>
+                    <div class="device-detail">
+                      <dt data-i18n="kv.initboot">init_boot</dt>
+                      <dd><span class="chip" id="devInitBoot">—</span></dd>
+                    </div>
+                    <div class="device-detail wide">
+                      <dt>KMI</dt>
+                      <dd id="devKMI">—</dd>
+                    </div>
+                    <div class="device-detail wide">
+                      <dt data-i18n="kv.kernel">内核</dt>
+                      <dd id="devKernel">—</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+            </section>
+            <section class="card operation-card">
+              <div class="card-head">
+                <h2 data-i18n="summary.title">操作摘要</h2>
+              </div>
+              <div class="card-body summary-grid">
+                <div class="summary-row">
+                  <span class="k" data-i18n="summary.mode">模式</span
+                  ><span class="v" id="sumMode">LKM</span>
+                </div>
+                <div class="summary-row">
+                  <span class="k" data-i18n="summary.partition">目标分区</span
+                  ><span class="v" id="sumPartition">—</span>
+                </div>
+                <div class="summary-row">
+                  <span class="k" data-i18n="summary.rom">匹配 ROM</span
+                  ><span class="v" id="sumRom">—</span>
+                </div>
+                <div class="summary-row">
+                  <span class="k" data-i18n="summary.download">下载策略</span
+                  ><span class="v" id="sumDownload">—</span>
+                </div>
+                <div class="summary-row">
+                  <span class="k" data-i18n="summary.flash">刷写</span
+                  ><span class="v" id="sumFlash">—</span>
+                </div>
+              </div>
+              <div class="safety-note">
+                <img src="icons/shield-check.svg" alt="" /><span
+                  data-i18n="summary.safe"
+                  >默认仅生成镜像，不写入设备。</span
+                >
+              </div>
+            </section>
+          </aside>
         </div>
 
-      </div>
-      <div class="modal-foot">
-        <span class="settings-error" id="settingsError"></span>
-        <div class="actions" style="margin-top:0">
-          <button class="btn ghost" id="cancelSettings" data-i18n="btn.cancel">取消</button>
-          <button class="btn primary" id="saveSettings" data-i18n="btn.save">保存</button>
+        <section class="result-panel hidden" id="resultPanel" role="status">
+          <div>
+            <h2 id="resultTitle"></h2>
+            <p id="resultDescription"></p>
+            <code id="resultPath"></code>
+          </div>
+          <button
+            class="btn"
+            id="copyResult"
+            type="button"
+            data-i18n="result.copy"
+          >
+            复制路径
+          </button>
+        </section>
+
+        <section
+          id="taskLog"
+          class="log-view hidden"
+          aria-label="运行日志"
+          tabindex="-1"
+        >
+          <header class="log-page-heading">
+            <div>
+              <h1 data-i18n="log.title">运行日志</h1>
+              <p data-i18n="logs.subtitle">查看本次任务的完整执行记录</p>
+            </div>
+            <button
+              class="btn"
+              id="exportLog"
+              type="button"
+              data-i18n="logs.export"
+            >
+              导出日志
+            </button>
+          </header>
+          <div class="task-overview">
+            <div>
+              <span class="task-symbol"
+                ><img src="icons/terminal-square.svg" alt=""
+              /></span>
+              <div>
+                <h2>
+                  <span id="logTaskTitle" data-i18n="logs.task">本次任务</span
+                  ><span class="status" id="logStatus" data-i18n="status.idle"
+                    >等待开始</span
+                  >
+                </h2>
+                <p id="logTaskMeta" data-i18n="logs.noTask">尚未开始任务</p>
+              </div>
+            </div>
+            <button
+              class="autoscroll on"
+              id="autoScroll"
+              type="button"
+              aria-pressed="true"
+            >
+              <span class="dot"></span
+              ><span id="autoScrollText" data-i18n="log.autoScroll.on"
+                >自动滚动</span
+              >
+            </button>
+          </div>
+          <div class="log-controls">
+            <label class="search"
+              ><span class="sr-only" data-i18n="logs.search">搜索日志内容</span
+              ><input
+                id="logSearch"
+                type="search"
+                data-i18n-placeholder="logs.search"
+                placeholder="搜索日志内容"
+                autocomplete="off"
+                spellcheck="false"
+            /></label>
+            <div class="level-filters" role="group" aria-label="日志级别">
+              <button
+                data-log-level="all"
+                class="selected"
+                aria-pressed="true"
+                type="button"
+              >
+                <span data-i18n="logs.all">全部</span>
+                <span id="logCountAll">0</span></button
+              ><button data-log-level="WARN" aria-pressed="false" type="button">
+                <span data-i18n="logs.warn">警告</span>
+                <span id="logCountWarn">0</span></button
+              ><button
+                data-log-level="ERROR"
+                aria-pressed="false"
+                type="button"
+              >
+                <span data-i18n="logs.error">错误</span>
+                <span id="logCountError">0</span>
+              </button>
+            </div>
+          </div>
+          <div class="log-layout" id="logBody">
+            <aside class="stage-list">
+              <div class="stage-label" data-i18n="logs.stages">执行阶段</div>
+              <button
+                data-log-stage="all"
+                class="selected"
+                type="button"
+                aria-pressed="true"
+              >
+                <span data-i18n="logs.allRecords">全部记录</span
+                ><span id="logStageAll">0</span></button
+              ><button
+                data-log-stage="device"
+                type="button"
+                aria-pressed="false"
+              >
+                <span class="stage-dot"></span
+                ><span data-i18n="logs.device">设备检查</span
+                ><span class="stage-state"></span></button
+              ><button data-log-stage="rom" type="button" aria-pressed="false">
+                <span class="stage-dot"></span
+                ><span data-i18n="logs.rom">原厂镜像</span
+                ><span class="stage-state"></span></button
+              ><button
+                data-log-stage="patch"
+                type="button"
+                aria-pressed="false"
+              >
+                <span class="stage-dot"></span
+                ><span data-i18n="logs.patch">KernelSU 修补</span
+                ><span class="stage-state"></span></button
+              ><button
+                data-log-stage="flash"
+                type="button"
+                aria-pressed="false"
+              >
+                <span class="stage-dot"></span
+                ><span data-i18n="logs.flash">设备刷写</span
+                ><span class="stage-state"></span>
+              </button>
+            </aside>
+            <div class="log-list-region">
+              <div class="table-heading">
+                <span data-i18n="logs.time">时间</span
+                ><span data-i18n="logs.level">级别</span
+                ><span data-i18n="logs.message">消息</span>
+              </div>
+              <div class="progress" id="runBar" style="display: none">
+                <i></i>
+              </div>
+              <div
+                id="log"
+                class="log-rows"
+                role="list"
+                aria-label="日志记录"
+                tabindex="0"
+              ></div>
+              <div id="logEmpty" class="no-logs" data-i18n="log.idle">
+                任务开始后，详细进度将在这里显示。
+              </div>
+            </div>
+          </div>
+          <footer class="log-footer">
+            <span id="logRecordCount" class="record-count">0 条记录</span
+            ><span id="logActionStatus" role="status"></span
+            ><span class="log-footer-hint" data-i18n="logs.detailHint"
+              >点击记录可查看事件详情</span
+            ><button
+              class="text-action"
+              id="copyLog"
+              type="button"
+              data-i18n="logs.copy"
+            >
+              复制全部
+            </button>
+          </footer>
+        </section>
+        <footer class="foot">
+          <span class="statusbar-local"
+            ><span class="dot"></span
+            ><span data-i18n="nav.local">在本机运行</span></span
+          ><span data-i18n="foot.note"
+            >刷写前，请确认 Bootloader 已解锁并完成备份。</span
+          >
+        </footer>
+      </main>
+      <div class="modal-backdrop hidden" id="settingsModal">
+        <div
+          class="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settingsTitle"
+        >
+          <div class="modal-head">
+            <h2 id="settingsTitle" data-i18n="settings.title">设置</h2>
+            <button
+              class="icon-btn"
+              id="closeSettings"
+              type="button"
+              aria-label="关闭"
+            >
+              <span>×</span>
+            </button>
+          </div>
+          <div class="settings-tabs" role="tablist" aria-label="设置页面">
+            <button
+              id="settingsGeneralTab"
+              role="tab"
+              aria-selected="true"
+              aria-controls="generalSettings"
+              type="button"
+              data-i18n="storage.generalTab"
+            >
+              通用设置</button
+            ><button
+              id="settingsStorageTab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="storageSettings"
+              type="button"
+              data-i18n="storage.tab"
+            >
+              存储与清理
+            </button>
+          </div>
+          <div class="modal-body">
+            <div
+              id="generalSettings"
+              role="tabpanel"
+              aria-labelledby="settingsGeneralTab"
+            >
+              <div class="settings-section">
+                <h3 data-i18n="settings.general">通用</h3>
+                <div class="field">
+                  <label for="setLanguage"
+                    ><span data-i18n="settings.language">界面语言</span></label
+                  >
+                  <select id="setLanguage">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="setOutputDir"
+                    ><span data-i18n="field.output">输出目录</span></label
+                  >
+                  <div class="control">
+                    <input id="setOutputDir" spellcheck="false" />
+                    <button
+                      class="btn"
+                      id="setChooseOutput"
+                      data-i18n="btn.choose"
+                    >
+                      选择
+                    </button>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="setLogScroll" />
+                  <span class="track"></span>
+                  <span
+                    ><span class="st" data-i18n="settings.logScroll"
+                      >日志自动滚动</span
+                    >
+                    <span class="sd" data-i18n="settings.logScroll.desc"
+                      >运行时自动滚动到最新日志。</span
+                    ></span
+                  >
+                </label>
+              </div>
+
+              <div class="settings-section">
+                <h3 data-i18n="settings.install">安装默认值</h3>
+                <div class="field">
+                  <label for="setMode"
+                    ><span data-i18n="field.mode">KernelSU 模式</span></label
+                  >
+                  <select id="setMode">
+                    <option value="lkm" data-i18n="mode.lkm">LKM</option>
+                    <option value="gki" data-i18n="mode.gki">
+                      GKI 替换内核
+                    </option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="setPartition"
+                    ><span data-i18n="field.partition">目标分区</span></label
+                  >
+                  <select id="setPartition">
+                    <option value="auto" data-i18n="partition.auto">
+                      自动（依据 KMI 与分区）
+                    </option>
+                    <option value="boot">boot</option>
+                    <option value="init_boot">init_boot</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <h3 data-i18n="settings.advanced">下载与工具</h3>
+                <div class="download-config settings-download">
+                  <div class="download-title">
+                    <div>
+                      <strong data-i18n="download.title">ROM 下载源</strong>
+                      <p data-i18n="download.desc">
+                        留空则自动测速小米官方 CDN；自定义源优先参与测速。
+                      </p>
+                    </div>
+                    <span class="resume-badge" data-i18n="download.resume"
+                      >支持断点续传</span
+                    >
+                  </div>
+                  <div class="field">
+                    <label for="setMirrors"
+                      ><span data-i18n="field.mirrors">镜像源基础地址</span
+                      ><span class="hint" data-i18n="hint.mirrors"
+                        >每行一个 HTTPS 地址</span
+                      ></label
+                    >
+                    <textarea
+                      id="setMirrors"
+                      rows="3"
+                      placeholder="https://mirror.example.com/xiaomi"
+                      spellcheck="false"
+                    ></textarea>
+                  </div>
+                  <div class="download-row">
+                    <div class="field">
+                      <label for="setConnections"
+                        ><span data-i18n="field.connections">并发连接数</span
+                        ><span class="hint">1–32</span></label
+                      >
+                      <input
+                        id="setConnections"
+                        type="number"
+                        min="1"
+                        max="32"
+                        value="16"
+                      />
+                    </div>
+                    <div class="download-note">
+                      <span class="signal"></span>
+                      <span data-i18n="download.strategy"
+                        >并行分片 · 镜像故障切换 · MD5 校验</span
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="setCatalog"
+                    ><span data-i18n="settings.catalog"
+                      >备用 ROM 索引地址</span
+                    ></label
+                  >
+                  <input
+                    id="setCatalog"
+                    spellcheck="false"
+                    placeholder="https://.../%s.xml"
+                  />
+                  <div
+                    class="hint"
+                    style="margin-top: 6px"
+                    data-i18n="settings.catalog.desc"
+                  >
+                    优先查询小米官方；此地址用于回退。必须为 HTTPS，包含一个 %s
+                    设备代号占位符。
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="setKsud"
+                    ><span data-i18n="settings.ksud">ksud 路径</span></label
+                  >
+                  <div class="control">
+                    <input
+                      id="setKsud"
+                      spellcheck="false"
+                      placeholder="bundled ksud"
+                    />
+                    <button
+                      class="btn"
+                      id="setChooseKsud"
+                      data-i18n="btn.choose"
+                    >
+                      选择
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <section
+              id="storageSettings"
+              class="hidden"
+              role="tabpanel"
+              aria-labelledby="settingsStorageTab"
+            >
+              <div class="storage-heading">
+                <div>
+                  <h3 data-i18n="storage.heading">管理本机产物</h3>
+                  <p data-i18n="storage.scope">
+                    仅扫描当前输出目录中可识别的 ROM 和镜像文件。
+                  </p>
+                </div>
+                <button
+                  class="btn"
+                  id="storageRefresh"
+                  type="button"
+                  data-i18n="storage.refresh"
+                >
+                  重新扫描
+                </button>
+              </div>
+              <div class="storage-root" id="storageRoot"></div>
+              <div class="storage-stats">
+                <div>
+                  <span data-i18n="storage.total">识别文件占用</span
+                  ><strong id="storageTotal">—</strong>
+                </div>
+                <div>
+                  <span data-i18n="storage.selected">预计清理占用</span
+                  ><strong id="storageSelected">0 B</strong>
+                </div>
+              </div>
+              <p class="storage-preserve" data-i18n="storage.preserve">
+                默认保留原厂备份和修补镜像；未完成的下载也会保留。
+              </p>
+              <p
+                id="storageWarning"
+                class="storage-warning hidden"
+                data-i18n="storage.warning"
+              >
+                所选包含原厂备份或修补镜像，删除后可能需要重新下载或修补。
+              </p>
+              <div id="storageState" role="status"></div>
+              <div id="storageGroups"></div>
+              <div
+                class="storage-result hidden"
+                id="storageResult"
+                role="status"
+              ></div>
+            </section>
+          </div>
+          <div class="modal-foot" id="generalSettingsFooter">
+            <span class="settings-error" id="settingsError"></span>
+            <div class="actions" style="margin-top: 0">
+              <button
+                class="btn ghost"
+                id="cancelSettings"
+                data-i18n="btn.cancel"
+              >
+                取消
+              </button>
+              <button
+                class="btn primary"
+                id="saveSettings"
+                data-i18n="btn.save"
+              >
+                保存
+              </button>
+            </div>
+          </div>
+          <div class="modal-foot storage-footer hidden" id="storageFooter">
+            <span id="storageSelectionCount" data-i18n="storage.none"
+              >请选择需要清理的文件</span
+            ><button
+              class="btn primary"
+              type="button"
+              id="storageClean"
+              disabled=""
+              data-i18n="storage.clean"
+            >
+              清理所选
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-
-</div>
-<script src="app.js"></script>
-</body>
+    <script src="log-view.js"></script>
+    <script src="storage-view.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>
