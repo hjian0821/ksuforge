@@ -1,4 +1,4 @@
-.PHONY: build cli gui tools release release-all test clean
+.PHONY: build gui tools release release-all test clean
 
 WAILS ?= $(shell go env GOPATH)/bin/wails
 WAILS_FLAGS ?=
@@ -6,6 +6,16 @@ GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 HOST_GOOS := $(shell go env GOHOSTOS)
 HOST_GOARCH := $(shell go env GOHOSTARCH)
+# Keep the macOS SDK paired with the active Xcode toolchain. Without SDKROOT,
+# the linker can pick a newer Command Line Tools SDK that it cannot read.
+# An explicit SDKROOT from the caller still takes precedence.
+ifeq ($(HOST_GOOS),darwin)
+ifeq ($(GOOS),darwin)
+SDKROOT ?= $(shell xcrun --sdk macosx --show-sdk-path)
+export SDKROOT
+endif
+endif
+
 VERSION ?= $(shell git describe --tags --always --dirty)
 EXE := $(if $(filter windows,$(GOOS)),.exe,)
 PROJECT_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -15,22 +25,16 @@ GUI_BUILD_BIN := $(GUI_DIR)/build/bin
 # Wails resolves -o relative to its internal build/bin directory.
 WAILS_OUTPUT := ../../../../bin/ksuforge$(EXE)
 
-build: cli gui
+build: gui
 
 # Download, verify and stage the bundled tools for the target platform. Existing
 # files are reused, so this is a no-op once the assets are present.
 tools:
 	cd "$(PROJECT_ROOT)" && CGO_ENABLED=0 GOOS="$(HOST_GOOS)" GOARCH="$(HOST_GOARCH)" go run ./cmd/fetchtools -goos $(GOOS) -goarch $(GOARCH)
 
-cli: tools
-	mkdir -p "$(BIN_DIR)"
-	cd "$(PROJECT_ROOT)" && go build -o "$(BIN_DIR)/ksuforge-cli$(EXE)" ./cmd/ksuforge
-	cp "$(PROJECT_ROOT)/third_party/bin/ksud$(EXE)" "$(BIN_DIR)/"
-	cp "$(PROJECT_ROOT)/third_party/bin/payload-dumper$(EXE)" "$(BIN_DIR)/"
-	cp "$(PROJECT_ROOT)/third_party/licenses/KernelSU-GPL-3.0.txt" "$(BIN_DIR)/KernelSU-GPL-3.0.txt"
-
 gui: tools
 	mkdir -p "$(BIN_DIR)"
+	cp "$(PROJECT_ROOT)/third_party/licenses/KernelSU-GPL-3.0.txt" "$(BIN_DIR)/KernelSU-GPL-3.0.txt"
 	cd "$(GUI_DIR)" && "$(WAILS)" build $(WAILS_FLAGS) -o "$(WAILS_OUTPUT)"
 	@if [ "$(GOOS)" = "darwin" ]; then \
 		mkdir -p "$(GUI_BUILD_BIN)/ksuforge.app/Contents/Resources/tools" "$(GUI_BUILD_BIN)/ksuforge.app/Contents/Resources/licenses"; \
@@ -43,7 +47,6 @@ gui: tools
 	else \
 		cp "$(PROJECT_ROOT)/third_party/bin/ksud$(EXE)" "$(BIN_DIR)/"; \
 		cp "$(PROJECT_ROOT)/third_party/bin/payload-dumper$(EXE)" "$(BIN_DIR)/"; \
-		cp "$(PROJECT_ROOT)/third_party/licenses/KernelSU-GPL-3.0.txt" "$(BIN_DIR)/KernelSU-GPL-3.0.txt"; \
 	fi
 
 # Build and package the current target for distribution.

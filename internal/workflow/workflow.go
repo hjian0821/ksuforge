@@ -79,14 +79,13 @@ func (s Service) Run(ctx context.Context, o Options) (Result, error) {
 	if !o.Yes {
 		logger.Info("workflow.step.manual_ready", "step", 5, "total", 5, "path", patched, "partition", prepared.Partition)
 		serialArg := quoteCommandArg(prepared.Device.Serial)
-		logger.Info("workflow.manual_flash_command", "command", fmt.Sprintf("adb -s %s reboot bootloader", serialArg))
+		logger.Info("workflow.manual_flash_command", "command", fmt.Sprintf("adb -s %s reboot fastboot", serialArg))
 		logger.Info("workflow.manual_flash_command", "command", fmt.Sprintf("fastboot -s %s flash %s %s", serialArg, prepared.Partition, quoteCommandArg(patched)))
 		logger.Info("workflow.manual_flash_command", "command", fmt.Sprintf("fastboot -s %s reboot", serialArg))
 		slog.Info("workflow.completed", "partition", result.Partition, "rom", result.ROMPath, "patched", result.PatchedImage)
 		return result, nil
 	}
 	logger.Info("workflow.step.reboot_fastboot", "step", 6, "total", 8)
-	logger.Info("workflow.step.validate_flash", "step", 7, "total", 8)
 	err = (flash.Service{Devices: s.Devices, Out: s.Out}).Run(ctx, flash.Options{
 		Serial: o.Serial, Image: patched, StockBackup: prepared.ImagePath, Partition: prepared.Partition,
 		Mode: o.Mode, Yes: o.Yes, NoReboot: o.NoReboot,

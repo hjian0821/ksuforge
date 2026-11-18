@@ -1,4 +1,4 @@
-// Command package-release creates separate GUI and CLI archives from native
+// Command package-release creates GUI archives from native
 // build outputs. Archive names follow
 // <project>-<kind>_<version>_<goos>_<goarch>.
 package main
@@ -110,18 +110,15 @@ func writeArchive(binDir, rootName, ext, goos string, inputs []string) (string, 
 }
 
 func releasePackages(goos string) []packageSpec {
-	exe := ""
 	gui := projectName
 	if goos == "windows" {
-		exe = ".exe"
-		gui += exe
+		gui += ".exe"
 	} else if goos == "darwin" {
 		gui += ".app"
 	}
 	license := "KernelSU-GPL-3.0.txt"
 	return []packageSpec{
 		{name: projectName + "-gui", inputs: []string{gui, license}},
-		{name: projectName + "-cli", inputs: []string{projectName + "-cli" + exe, license}},
 	}
 }
 

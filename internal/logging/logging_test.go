@@ -20,8 +20,20 @@ func TestWithWriterMirrorsStructuredRecord(t *testing.T) {
 	if !strings.Contains(got, "download progress") || !strings.Contains(got, "percent=50") {
 		t.Fatalf("stream log content = %q", got)
 	}
-	if strings.Contains(got, "level=INFO") || strings.Contains(got, "time=") {
-		t.Fatalf("stream log should omit level and time: %q", got)
+	if !strings.Contains(got, "level=INFO") || !strings.Contains(got, "time=") {
+		t.Fatalf("stream log should preserve level and time: %q", got)
+	}
+}
+
+func TestWithWriterPreservesSeverity(t *testing.T) {
+	var output bytes.Buffer
+	logger := WithWriter(&output)
+	logger.Warn("catalog fallback")
+	logger.Error("task failed")
+	for _, level := range []string{"level=WARN", "level=ERROR"} {
+		if !strings.Contains(output.String(), level) {
+			t.Fatalf("missing severity %s in %q", level, output.String())
+		}
 	}
 }
 

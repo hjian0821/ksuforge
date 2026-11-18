@@ -120,8 +120,6 @@ jobs:
           path: |
             bin/ksuforge-gui_*.tar.gz
             bin/ksuforge-gui_*.zip
-            bin/ksuforge-cli_*.tar.gz
-            bin/ksuforge-cli_*.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -144,7 +142,7 @@ jobs:
 
       - name: Generate SHA-256 checksums
         shell: bash
-        run: cd bin && sha256sum ksuforge-gui_* ksuforge-cli_* > checksums.txt
+        run: cd bin && sha256sum ksuforge-gui_* > checksums.txt
 
       - name: Generate download guide
         shell: bash
@@ -155,17 +153,17 @@ jobs:
           cat > release-notes.md <<EOF
           ## Which file should I download?
 
-          Choose **GUI** for the desktop application. Choose **CLI** only if you want to use KSUForge from a terminal or script.
+          Download the desktop application for your operating system and architecture.
 
-          | System | Architecture | Desktop GUI | Command line |
-          | --- | --- | --- | --- |
-          | macOS (Apple Silicon) | ARM64 | \`ksuforge-gui_${package_version}_darwin_arm64.tar.gz\` | \`ksuforge-cli_${package_version}_darwin_arm64.tar.gz\` |
-          | macOS (Intel) | AMD64 | \`ksuforge-gui_${package_version}_darwin_amd64.tar.gz\` | \`ksuforge-cli_${package_version}_darwin_amd64.tar.gz\` |
-          | Linux ARM64 | ARM64 | \`ksuforge-gui_${package_version}_linux_arm64.tar.gz\` | \`ksuforge-cli_${package_version}_linux_arm64.tar.gz\` |
-          | Linux x64 | AMD64 | \`ksuforge-gui_${package_version}_linux_amd64.tar.gz\` | \`ksuforge-cli_${package_version}_linux_amd64.tar.gz\` |
-          | Windows x64 | AMD64 | \`ksuforge-gui_${package_version}_windows_amd64.zip\` | \`ksuforge-cli_${package_version}_windows_amd64.zip\` |
+          | System | Architecture | Desktop GUI |
+          | --- | --- | --- |
+          | macOS (Apple Silicon) | ARM64 | \`ksuforge-gui_${package_version}_darwin_arm64.tar.gz\` |
+          | macOS (Intel) | AMD64 | \`ksuforge-gui_${package_version}_darwin_amd64.tar.gz\` |
+          | Linux ARM64 | ARM64 | \`ksuforge-gui_${package_version}_linux_arm64.tar.gz\` |
+          | Linux x64 | AMD64 | \`ksuforge-gui_${package_version}_linux_amd64.tar.gz\` |
+          | Windows x64 | AMD64 | \`ksuforge-gui_${package_version}_windows_amd64.zip\` |
 
-          Both applications contain the required \`ksud\` and \`payload-dumper\` tools. You do not need to download them separately. Use \`checksums.txt\` to verify SHA-256 checksums.
+          The application contains the required \`ksud\` and \`payload-dumper\` tools. You do not need to download them separately. Use \`checksums.txt\` to verify SHA-256 checksums.
           EOF
 
       - name: Create or update GitHub Release

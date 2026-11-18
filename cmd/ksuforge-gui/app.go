@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hjian0821/ksuforge/internal/cleanup"
 	"github.com/hjian0821/ksuforge/internal/command"
 	"github.com/hjian0821/ksuforge/internal/config"
 	"github.com/hjian0821/ksuforge/internal/device"
@@ -50,12 +51,14 @@ type Settings struct {
 }
 
 type App struct {
-	ctx     context.Context
-	devices device.Client
-	mu      sync.Mutex
-	state   TaskState
-	cfgMu   sync.Mutex
-	cfg     config.Config
+	storageMu   sync.Mutex
+	cleanupPlan *cleanup.Plan
+	ctx         context.Context
+	devices     device.Client
+	mu          sync.Mutex
+	state       TaskState
+	cfgMu       sync.Mutex
+	cfg         config.Config
 }
 
 func NewApp() *App {
@@ -97,6 +100,8 @@ func (a *App) GetSettings() Settings {
 }
 
 func (a *App) SaveSettings(s Settings) error {
+	a.storageMu.Lock()
+	defer a.storageMu.Unlock()
 	if s.Language != "zh" && s.Language != "en" {
 		return i18n.NewError("error.language_unsupported")
 	}
@@ -208,7 +213,35 @@ func (a *App) State() TaskState {
 	return a.state
 }
 
+// ExportRunLog saves a consistent snapshot through the platform save dialog.
+func (a *App) ExportRunLog() (string, error) {
+	state := a.State()
+	text := state.Log
+	if state.Error != "" {
+		text += "\n" + state.Error
+	}
+	if strings.TrimSpace(text) == "" {
+		return "", nil
+	}
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		DefaultFilename: "ksuforge-run-" + time.Now().Format("20060102-150405") + ".log",
+		Filters:         []runtime.FileFilter{{DisplayName: "Log files", Pattern: "*.log"}},
+	})
+	if err != nil {
+		return "", i18n.WrapError("error.log_export", err)
+	}
+	if path == "" {
+		return "", nil
+	}
+	if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+		return "", i18n.WrapError("error.log_export", err)
+	}
+	return path, nil
+}
+
 func (a *App) Start(request InstallRequest) error {
+	a.storageMu.Lock()
+	defer a.storageMu.Unlock()
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.state.Status == "running" {

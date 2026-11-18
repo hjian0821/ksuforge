@@ -28,8 +28,8 @@ func Language(ctx context.Context) string {
 }
 
 // WithWriter returns a logger that writes structured records to the process
-// logger and mirrors them to the supplied task stream. The stream handler omits
-// timestamps and levels so GUI and CLI transcripts stay compact.
+// logger and mirrors them to the supplied task stream. The stream handler retains
+// timestamps and levels so the GUI can filter and inspect structured records.
 func WithWriter(out io.Writer, language ...string) *slog.Logger {
 	if out == nil {
 		return slog.Default()
@@ -38,14 +38,7 @@ func WithWriter(out io.Writer, language ...string) *slog.Logger {
 	if len(language) > 0 {
 		lang = i18n.Normalize(language[0])
 	}
-	var stream slog.Handler = slog.NewTextHandler(out, &slog.HandlerOptions{
-		ReplaceAttr: func(_ []string, attr slog.Attr) slog.Attr {
-			if attr.Key == slog.TimeKey || attr.Key == slog.LevelKey {
-				return slog.Attr{}
-			}
-			return attr
-		},
-	})
+	var stream slog.Handler = slog.NewTextHandler(out, &slog.HandlerOptions{})
 	localizedStream := localizingHandler{next: stream, language: lang}
 	return slog.New(multiHandler{slog.Default().Handler(), localizedStream})
 }

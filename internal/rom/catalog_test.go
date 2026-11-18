@@ -17,7 +17,7 @@ func TestFindRecoveryExactVersion(t *testing.T) {
 		_, _ = io.WriteString(w, feed)
 	}))
 	defer server.Close()
-	release, err := FindRecovery(context.Background(), server.Client(), server.URL+"/%s.xml", "houji", "OS1.0.2.0.UNCCNXM")
+	release, err := findCatalogRecovery(context.Background(), server.Client(), server.URL+"/%s.xml", "houji", "OS1.0.2.0.UNCCNXM")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestFindRecoveryDoesNotSubstituteVersion(t *testing.T) {
 	feed := `<?xml version="1.0"?><rss><channel><item><title>MIUI OS1.0.3.0.UNCCNXM Recovery update</title><link>https://bigota.d.miui.com/rom.zip</link></item></channel></rss>`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, feed) }))
 	defer server.Close()
-	_, err := FindRecovery(context.Background(), server.Client(), server.URL+"/%s.xml", "houji", "OS1.0.2.0.UNCCNXM")
+	_, err := findCatalogRecovery(context.Background(), server.Client(), server.URL+"/%s.xml", "houji", "OS1.0.2.0.UNCCNXM")
 	if err == nil {
 		t.Fatal("expected exact-version lookup to fail")
 	}

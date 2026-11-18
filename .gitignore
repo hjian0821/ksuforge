@@ -11,4 +11,5 @@
 .idea/
 *.img
 *.zip
+/tmp/
 .DS_Store
